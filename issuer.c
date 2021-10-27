@@ -5,51 +5,53 @@
 #define BAUDRATE B38400
 
 int main(int argc, char** argv) {
-    int fd;
-    struct termios oldConfig, newConfig;
-    char buf[255];
 
-    //TODO: VERIFICAR TODOS VALORES DE RETORNO
+  int fd;
+  struct termios oldConfig, newConfig;
+  char buf[255];
 
-    if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
-      printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
+  // Verifying input
+  if (argc < 2 || (strcmp("/dev/ttyS0", argv[1]) != 0 && strcmp("/dev/ttyS1", argv[1]) != 0)) {
+    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
+    exit(1);
+  }
+
+  // Opening file descriptor
+  if (fd = open(argv[1], O_RDWR | O_NOCTTY) < 0) {
+    perror(argv[1]);
+    exit(1);
+  }
+
+  // Saving old config
+  if (getConfig(fd, &oldConfig) != 0) exit(1);
+
+  // Getting new config
+  configNonCanonical(&newConfig);
+
+  // Flushing unread or not written data of SerialPort
+  tcflush(fd, TCIOFLUSH);
+
+  // Loading new config
+  if (loadConfig(fd, &newConfig) != 0) exit(1);
+
+  // Recieving data from stdin
+  if (fgets(buf, 255, stdin) == NULL) {
       exit(1);
-    }
+  }
 
-    fd = open(argv[1], O_RDWR | O_NOCTTY );
-    if (fd <0) {perror(argv[1]); exit(-1); }
+  // Writting data
+  write(fd, buf, 255);
 
-    saveConfig(fd, &oldConfig);
+  // Recovering old config
+  loadConfig(fd, &oldConfig);
 
-    configNonCanonical(&newConfig);
-
-    tcflush(fd, TCIOFLUSH);
-
-    loadConfig(fd, &newConfig);
-
-    if (fgets(buf, 255, stdin) == NULL) {
-        exit(1);
-    }
-
-    write(fd, buf, 255);
-
-    loadConfig(fd, &oldConfig);
-
-    close(fd);
-    
-    return 0;
-
-    // read linha
-    //guardar config
-    //alterar config
-    //escrever na porta
-    //restaurar config
-    //fechar porta e morrer
+  // Closing file descriptor
+  close(fd);
+  
+  return 0;
 }
 
-int saveConfig(int fd, struct termios *config) {
+int getConfig(int fd, struct termios *config) {
     if (tcgetattr(fd, config) == -1) {
       perror("tcgetattr");
       return 1;
