@@ -3,22 +3,19 @@
 #include <fcntl.h>
 
 #define BAUDRATE B38400
+#define MODEMDEVICE "/dev/ttyS10"
+#define _POSIX_SOURCE 1
 
-int main(int argc, char** argv) {
+int main() {
 
   int fd;
   struct termios oldConfig, newConfig;
   char buf[255];
 
-  // Verifying input
-  if (argc < 2 || (strcmp("/dev/ttyS10", argv[1]) != 0 && strcmp("/dev/ttyS11", argv[1]) != 0)) {
-    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-    exit(1);
-  }
-
   // Opening file descriptor
-  if (fd = open(argv[1], O_RDWR | O_NOCTTY) < 0) {
-    perror(argv[1]);
+  fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY);
+  if (fd < 0) {
+    perror(MODEMDEVICE);
     exit(1);
   }
 
@@ -35,12 +32,13 @@ int main(int argc, char** argv) {
   if (loadConfig(fd, &newConfig) != 0) exit(1);
 
   // Recieving data from stdin
+  printf("> ");
   if (fgets(buf, 255, stdin) == NULL) {
       exit(1);
   }
 
   // Writting data
-  write(fd, buf, 255);
+  write(fd, buf, strlen(buf) + 1);
 
   // Recovering old config
   loadConfig(fd, &oldConfig);
@@ -76,5 +74,5 @@ void configNonCanonical(struct termios *config) {
     config->c_lflag = 0;
 
     config->c_cc[VTIME]    = 0;   /* inter-character timer unused */
-    config->c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
+    config->c_cc[VMIN]     = 1;   /* blocking read until 1 char received */
 }
