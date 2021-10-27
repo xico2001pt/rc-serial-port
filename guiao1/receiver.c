@@ -3,7 +3,7 @@
 #include <termios.h>
 #include <fcntl.h>
 
-#define MODEMDEVICE "/dev/ttyS10"
+#define MODEMDEVICE "/dev/ttyS11"
 
 int main() {
 
@@ -30,23 +30,20 @@ int main() {
   // Loading new config
   if (loadConfig(fd, &newConfig) != 0) exit(1);
 
-  // Recieving data from stdin
-  printf("> ");
-  if (fgets(buf, 255, stdin) == NULL) exit(1);
-
-  // Writting data
-  write(fd, buf, strlen(buf) + 1);
-
   // Reading data
-  printf("Waiting to recieve the message back...\n");
+  printf("Waiting for a read...\n");
   res = read(fd, buf, 255);
   printf(":%s:%d\n", buf, res);
+
+  // Writting data
+  printf("Sending back the received message...\n");
+  write(fd, buf, strlen(buf) + 1);
 
   // Recovering old config
   loadConfig(fd, &oldConfig);
 
   // Closing file descriptor
   close(fd);
-
+  
   return 0;
 }
