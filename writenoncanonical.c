@@ -80,6 +80,7 @@ int main(int argc, char** argv)
     
     /*testing*/
     buf[25] = '\n';
+    buf[26] = '\0';
     
     res = write(fd,buf,255);   
     printf("%d bytes written\n", res);
