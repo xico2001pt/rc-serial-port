@@ -1,9 +1,8 @@
 #include "serial_config.h"
+#include "protocol.h"
 #include <stdio.h>
 #include <termios.h>
 #include <fcntl.h>
-
-#define MODEMDEVICE "/dev/ttyS11"
 
 int main() {
 
@@ -30,14 +29,25 @@ int main() {
   // Loading new config
   if (loadConfig(fd, &newConfig) != 0) exit(1);
 
-  // Reading data
-  printf("Waiting for a read...\n");
-  res = read(fd, buf, 255);
-  printf(":%s:%d\n", buf, res);
+  // Recieving data
+  ReceptionState state = START;
+  char byte, address, control, n;
 
-  // Writting data
-  printf("Sending back the received message...\n");
-  write(fd, buf, strlen(buf) + 1);
+  while (state != STOP) {
+    n = read(fd, byte, 1);
+    fprintf(stderr, "%d\n", n);
+    fprintf("0x%X\n", byte);
+    state = receptionStateMachine(state, byte);
+
+    if (state == A_RCV) address = byte;
+    else if (state == C_RCV) {
+      control = byte;
+      if (read(fd, byte, 1) != 1) break;
+      if (byte == BCC(address, control)) state = BCC_RCV;
+      else if (byte == FLAG) state = FLAG;
+      else state = START;
+    }
+  }
 
   // Recovering old config
   loadConfig(fd, &oldConfig);
@@ -46,4 +56,27 @@ int main() {
   close(fd);
   
   return 0;
+}
+
+ReceptionState receptionStateMachine(ReceptionState currentState, char byte) {
+  switch (currentState) {
+  case START:
+    if (byte == FLAG) return FLAG_RCV;
+    return START;
+  case FLAG_RCV:
+    if (byte == A_EMITTER_RECEIVER) return A_RCV;
+    else if (byte == FLAG) return FLAG_RCV;
+    return START;
+  case A_RCV:
+    if (byte == C_SET) return C_RCV;
+    else if (byte == FLAG) return FLAG_RCV;
+    return START;
+  case BCC_RCV:
+    if (byte == FLAG) return STOP;
+    return START;
+  case STOP:
+    return STOP;
+  default:
+    return START;
+  }
 }

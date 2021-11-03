@@ -1,4 +1,5 @@
 #include "serial_config.h"
+#include "protocol.h"
 #include <stdio.h>
 #include <termios.h>
 #include <fcntl.h>
@@ -30,17 +31,9 @@ int main() {
   // Loading new config
   if (loadConfig(fd, &newConfig) != 0) exit(1);
 
-  // Recieving data from stdin
-  printf("> ");
-  if (fgets(buf, 255, stdin) == NULL) exit(1);
-
   // Writting data
-  write(fd, buf, strlen(buf) + 1);
-
-  // Reading data
-  printf("Waiting to recieve the message back...\n");
-  res = read(fd, buf, 255);
-  printf(":%s:%d\n", buf, res);
+  char data[5] = {FLAG, A_EMITTER_RECEIVER, C_SET, BCC(A_RECEIVER_EMITTER, C_SET), FLAG};
+  write(fd, data, 5);
 
   // Recovering old config
   loadConfig(fd, &oldConfig);
