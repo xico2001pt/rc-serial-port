@@ -1,8 +1,7 @@
 #include "serial_config.h"
 #include "protocol.h"
-#include <stdio.h>
-#include <termios.h>
-#include <fcntl.h>
+
+#define MODEMDEVICE "/dev/ttyS11"
 
 int main() {
 
@@ -34,15 +33,15 @@ int main() {
   char byte, address, control, n;
 
   while (state != STOP) {
-    n = read(fd, byte, 1);
+    n = read(fd, &byte, 1);
     fprintf(stderr, "%d\n", n);
-    fprintf("0x%X\n", byte);
+    fprintf(stderr, "0x%X\n", byte);
     state = receptionStateMachine(state, byte);
 
     if (state == A_RCV) address = byte;
     else if (state == C_RCV) {
       control = byte;
-      if (read(fd, byte, 1) != 1) break;
+      if (read(fd, &byte, 1) != 1) break;
       if (byte == BCC(address, control)) state = BCC_RCV;
       else if (byte == FLAG) state = FLAG;
       else state = START;

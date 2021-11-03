@@ -1,8 +1,5 @@
 #include "serial_config.h"
 #include "protocol.h"
-#include <stdio.h>
-#include <termios.h>
-#include <fcntl.h>
 
 #define MODEMDEVICE "/dev/ttyS10"
 

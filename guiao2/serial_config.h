@@ -2,11 +2,13 @@
 #define SERIAL_CONFIG
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <strings.h>
 
 #define BAUDRATE B38400
-#define MODEMDEVICE "/dev/ttyS11"
 
 typedef enum {START, FLAG_RCV, A_RCV, C_RCV, BCC_RCV, STOP} ReceptionState;
 
