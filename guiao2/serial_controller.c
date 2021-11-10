@@ -36,6 +36,24 @@ SUFrameState SUFrameStateMachine(SUFrameState currentState, char byte) {
   return ERROR;
 }
 
+int communicateFrame(int fd, int attempts, int timer, char *data, char* status, int writeFirst) {
+  for (int attempt = 0; attempt <= attempts; ++attempt) {
+
+    if (attempt == 0) printf("> Sending frame...\n");
+    else printf("> Trying to send it again...\n");
+
+    if (writeFirst) {
+      if (write(fd, data, 5) < 5) continue; // TODO: variable com tamanho
+      if (receiveFrame(fd, 3, status) == 0) return 0;
+    } else {
+      if (receiveFrame(fd, 3, status) != 0) continue;
+      if (write(fd, data, 5) == 5) return 0;
+    }
+  }
+
+  return 1;
+}
+
 int receiveFrame(int fd, int timer, char *frame) {
 
   // Initializing alarm
@@ -61,7 +79,7 @@ int receiveFrame(int fd, int timer, char *frame) {
     } else if (n == 0) {  // Nothing to read
       continue;
     } else if (n == 1) {  // Read one byte
-      state = SUFrameStateMachine(state, byte);
+      state = SUFrameStateMachine(state, byte);  // TODO: adpatar para tramas de informação
       frame[idx++] = byte;
 
       printf("0x%X\n", byte);   // Debug

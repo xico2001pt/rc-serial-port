@@ -29,18 +29,7 @@ int main() {
   // Loading new config
   if (loadConfig(fd, &newConfig) != 0) exit(1);
 
-  for (int tries = 0; tries <= 3; ++tries) {
-
-    if (tries == 0) printf("> Sending frame...\n");
-    else printf("> Trying to send it again...\n");
-
-    // Writing data
-    char data[5] = {FLAG, A_EMITTER_RECEIVER, C_SET, BCC(A_EMITTER_RECEIVER, C_SET), FLAG};
-    write(fd, data, 5);
-
-    // Receiving data
-    if (receiveFrame(fd, 3, data) == 0) break;
-  }
+  establishConnection(fd);
 
   // Recovering old config
   loadConfig(fd, &oldConfig);
@@ -49,4 +38,9 @@ int main() {
   close(fd);
 
   return 0;
+}
+
+int establishConnection(int fd) {
+  char status[5], data[5] = {FLAG, A_EMITTER_RECEIVER, C_SET, BCC(A_EMITTER_RECEIVER, C_SET), FLAG};
+  return communicateFrame(fd, 3, 3, data, status, 1);
 }
