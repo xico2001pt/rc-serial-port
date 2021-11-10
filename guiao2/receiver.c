@@ -1,6 +1,6 @@
 #include "serial_config.h"
 #include "protocol.h"
-#include "state_machine.h"
+#include "serial_controller.h"
 
 #define MODEMDEVICE "/dev/ttyS11"
 
@@ -28,8 +28,6 @@ int main() {
 
   // Loading new config
   if (loadConfig(fd, &newConfig) != 0) exit(1);
-
-  sleep(1000);
 
   // Recieving data
   SUFrameState state = START;

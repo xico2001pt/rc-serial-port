@@ -4,13 +4,6 @@
 
 #define MODEMDEVICE "/dev/ttyS10"
 
-static int tries = 0, tryAgain = 1;
-
-void alarmCall() {
-  tries++;
-  tryAgain = 0;
-}
-
 int main() {
 
   int fd, res;
@@ -36,37 +29,16 @@ int main() {
   // Loading new config
   if (loadConfig(fd, &newConfig) != 0) exit(1);
 
-  // Setting SIGALARM handler
-  signal(SIGALRM, alarmCall);
-
-  while (tries < 3) {
+  for (int tries = 0; tries < 3; ++tries) {
     
     // Writing data
     char data[5] = {FLAG, A_EMITTER_RECEIVER, C_SET, BCC(A_EMITTER_RECEIVER, C_SET), FLAG};
     write(fd, data, 5);
 
-    // Setting time-out
-    alarm(3);
-
-    // Recieving data
-    SUFrameState state = START;
-    char byte;
-    int n;
-
-    // Making it try again
-    tryAgain = 1;
-
-    while (tryAgain && state != STOP) {
-      n = read(fd, &byte, 1);
-      fprintf(stderr, "0x%X, %d\n", byte, n);
-      state = SUFrameStateMachine(state, byte);
-    }
-
-    if (state == STOP) break;
+    // Receiving data
+    if (receiveFrame(fd, 30, data) == 0) break;
+    printf("Trying again!\n");
   }
-
-  // Reseting alarm
-  alarm(0);
 
   // Recovering old config
   loadConfig(fd, &oldConfig);

@@ -6,31 +6,53 @@ SUFrameState SUFrameStateMachine(SUFrameState currentState, char byte) {
   switch (currentState) {
   case START:
     if (byte == FLAG) return FLAG_RCV;
-    return START;
+    break;
   case FLAG_RCV:
-    address = byte;
-    if (byte == A_EMITTER_RECEIVER) return A_RCV;
-    else if (byte == FLAG) return FLAG_RCV;
-    return START;
+    if (byte == A_EMITTER_RECEIVER) {
+      address = byte;
+      return A_RCV;
+    }
+    break;
   case A_RCV:
-    control = byte;
-    if (IS_CONTROL_BYTE(byte)) return C_RCV;
-    else if (byte == FLAG) return FLAG_RCV;
-    return START;
+    if (IS_CONTROL_BYTE(byte)) {
+      control = byte;
+      return C_RCV;
+    }
+    break;
   case C_RCV:
     if (byte == BCC(address, control)) return BCC_RCV;
-    else if (byte == FLAG) return FLAG;
-    return START;
+    break;
   case BCC_RCV:
     if (byte == FLAG) return STOP;
-    return START;
+    break;
   case STOP:
     return STOP;
-  default:
-    return START;
   }
+
+  return ERROR;
 }
 
+/**
+ * @param timer: Number of coiso que coiso
+ */
 int receiveFrame(int fd, int timer, char *frame) {
+  char byte;
+  SUFrameState state = START;
+  int n, idx = 0;
   
+  while (state != STOP) {
+    n = read(fd, &byte, 1);
+    printf("hello there\n");
+    if (n != 1) {
+      timer -= 1;  // TODO: CHANGE TO MACRO
+      if (timer <= 0) return 1;
+    } else {
+      frame[idx++] = byte;
+      fprintf(stderr, "0x%X, %d\n", byte, n);
+      state = SUFrameStateMachine(state, byte);
+      if (state == ERROR) return 1;
+    }
+  }
+  
+  return 0;
 }

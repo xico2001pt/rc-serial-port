@@ -7,7 +7,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <strings.h>
-#include <signal.h>
 
 #define BAUDRATE B38400
 
