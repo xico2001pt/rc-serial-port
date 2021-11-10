@@ -29,6 +29,8 @@ int main() {
   // Loading new config
   if (loadConfig(fd, &newConfig) != 0) exit(1);
 
+  sleep(1000);
+
   // Recieving data
   SUFrameState state = START;
   char byte;

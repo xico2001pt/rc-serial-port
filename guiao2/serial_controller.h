@@ -1,5 +1,5 @@
-#ifndef STATE_MACHINE
-#define STATE_MACHINE
+#ifndef SERIAL_CONTROLLER
+#define SERIAL_CONTROLLER
 
 #include "protocol.h"
 
@@ -11,4 +11,6 @@ typedef enum {START, FLAG_RCV, A_RCV, C_RCV, BCC_RCV, STOP} SUFrameState;
 SUFrameState SUFrameStateMachine(SUFrameState currentState, char byte);
 //IFrameState IFrameStateMachine(IFrameState currentState, char byte);
 
-#endif // STATE_MACHINE
+int receiveFrame(int fd, int timer, char *frame);
+
+#endif // SERIAL_CONTROLLER

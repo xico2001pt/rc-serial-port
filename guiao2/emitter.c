@@ -1,15 +1,15 @@
 #include "serial_config.h"
 #include "protocol.h"
-#include "state_machine.h"
+#include "serial_controller.h"
 
 #define MODEMDEVICE "/dev/ttyS10"
 
-/*static int tries = 0, tryAgain = 1;
+static int tries = 0, tryAgain = 1;
 
 void alarmCall() {
   tries++;
   tryAgain = 0;
-}*/
+}
 
 int main() {
 
@@ -36,7 +36,7 @@ int main() {
   // Loading new config
   if (loadConfig(fd, &newConfig) != 0) exit(1);
 
-  /*// Setting SIGALARM handler
+  // Setting SIGALARM handler
   signal(SIGALRM, alarmCall);
 
   while (tries < 3) {
@@ -51,13 +51,14 @@ int main() {
     // Recieving data
     SUFrameState state = START;
     char byte;
+    int n;
 
     // Making it try again
     tryAgain = 1;
 
     while (tryAgain && state != STOP) {
-      read(fd, &byte, 1);                 // After SIGALARM call, it gets stuck in the read, I don't know any way of fixing this without changing read() parameters (it's a lot of work)
-      fprintf(stderr, "0x%X\n", byte);
+      n = read(fd, &byte, 1);
+      fprintf(stderr, "0x%X, %d\n", byte, n);
       state = SUFrameStateMachine(state, byte);
     }
 
@@ -65,21 +66,7 @@ int main() {
   }
 
   // Reseting alarm
-  alarm(0);*/
-
-  // Writing data
-  char data[5] = {FLAG, A_EMITTER_RECEIVER, C_SET, BCC(A_EMITTER_RECEIVER, C_SET), FLAG};
-  write(fd, data, 5);
-
-  SUFrameState state = START;
-  char byte;
-
-  // Reading data
-  while (state != STOP) {
-    read(fd, &byte, 1);
-    fprintf(stderr, "0x%X\n", byte);
-    state = SUFrameStateMachine(state, byte);
-  }
+  alarm(0);
 
   // Recovering old config
   loadConfig(fd, &oldConfig);

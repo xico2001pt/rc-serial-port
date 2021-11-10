@@ -24,6 +24,6 @@ void configNonCanonical(struct termios *config) {
 
   config->c_lflag = 0;
 
-  config->c_cc[VTIME]    = 0;   /* inter-character timer unused */
-  config->c_cc[VMIN]     = 1;   /* blocking read until 1 char received */
+  config->c_cc[VTIME]    = 1;   /* inter-character timer unused */
+  config->c_cc[VMIN]     = 0;   /* blocking read until 1 char received */
 }

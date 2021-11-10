@@ -1,4 +1,4 @@
-#include "state_machine.h"
+#include "serial_controller.h"
 
 SUFrameState SUFrameStateMachine(SUFrameState currentState, char byte) {
   static char address;
@@ -29,4 +29,8 @@ SUFrameState SUFrameStateMachine(SUFrameState currentState, char byte) {
   default:
     return START;
   }
+}
+
+int receiveFrame(int fd, int timer, char *frame) {
+  
 }
