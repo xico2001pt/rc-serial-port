@@ -3,8 +3,7 @@
 
 #include "protocol.h"
 #include <stdio.h>
-
-char control;
+#include <signal.h>
 
 typedef enum {START, FLAG_RCV, A_RCV, C_RCV, BCC_RCV, STOP, ERROR} SUFrameState;
 //typedef enum {...} IFrameState;

@@ -29,23 +29,21 @@ int main() {
   // Loading new config
   if (loadConfig(fd, &newConfig) != 0) exit(1);
 
+  printf("> Waiting for frame to be recieved...\n");
+
   // Recieving data
-  SUFrameState state = START;
-  char byte;
+  char data[5];
+  if (receiveFrame(fd, 0, data) == 1) exit(1);
 
-  while (state != STOP) {
-    read(fd, &byte, 1);
-    fprintf(stderr, "0x%X\n", byte);
-    state = SUFrameStateMachine(state, byte);
-  }
+  //sleep(4);
 
-  char data[5] = {FLAG, A_EMITTER_RECEIVER, 0, 0, FLAG};
-  if (control == C_SET) data[2] = C_UA;
-  else if (control == C_DISC) data[2] = C_DISC;
+  // Formatting frame to be sent
+  if (data[2] == C_SET) data[2] = C_UA;
+  else if (data[2] == C_DISC) data[2] = C_DISC;
   else exit(1);
-
   data[3] = BCC(data[1], data[2]);
 
+  // Sending frame
   write(fd, data, 5);
 
   // Recovering old config
