@@ -4,43 +4,42 @@
 
 #define MODEMDEVICE "/dev/ttyS10"
 
-int main() {
+int communicateFrame(int fd, int attempts, int timer, char *data, char *response) {
+  for (int attempt = 0; attempt <= attempts; ++attempt) {
 
-  int fd, res;
-  struct termios oldConfig, newConfig;
-  char buf[255];
+    if (attempt == 0) printf("> Sending frame...\n");
+    else printf("> Trying to send it again...\n");
 
-  // Opening file descriptor
-  fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY);
-  if (fd < 0) {
-    perror(MODEMDEVICE);
-    exit(1);
+    if (write(fd, data, 5) < 5) continue; // TODO: variable com tamanho
+    if (receiveFrame(fd, timer, response) == 0) return 0;
   }
 
-  // Saving old config
-  if (getConfig(fd, &oldConfig) != 0) exit(1);
-
-  // Getting new config
-  configNonCanonical(&newConfig);
-
-  // Flushing unread or not written data of SerialPort
-  tcflush(fd, TCIOFLUSH);
-
-  // Loading new config
-  if (loadConfig(fd, &newConfig) != 0) exit(1);
-
-  establishConnection(fd);
-
-  // Recovering old config
-  loadConfig(fd, &oldConfig);
-
-  // Closing file descriptor
-  close(fd);
-
-  return 0;
+  return 1;
 }
 
-int establishConnection(int fd) {
-  char status[5], data[5] = {FLAG, A_EMITTER_RECEIVER, C_SET, BCC(A_EMITTER_RECEIVER, C_SET), FLAG};
-  return communicateFrame(fd, 3, 3, data, status, 1);
+int main() {
+
+  struct termios oldConfig;
+  int fd = openSerial(MODEMDEVICE, &oldConfig);
+  if (fd < 0) return 1;
+
+  char response[5], data[5] = {FLAG, A_EMITTER_RECEIVER, C_SET, BCC(A_EMITTER_RECEIVER, C_SET), FLAG};
+
+  // Sending SET frame and waiting for ACK
+  if (communicateFrame(fd, 3, 3, data, response) != 0) return 1;
+  if (response[2] != C_UA) return 1;
+
+  // Sending DISC frame, waiting for DISC and sending back ACK
+  data[2] = C_DISC;
+  data[3] = BCC(data[1], data[2]);
+  if (communicateFrame(fd, 3, 3, data, response) != 0) return 1;
+  if (response[2] != C_DISC) return 1;
+  data[2] = C_UA;
+  data[3] = BCC(data[1], data[2]);
+  if (write(fd, data, 5) < 0) return 1;
+
+  // Closing serial
+  if (closeSerial(fd, oldConfig) != 0) return 1;
+
+  return 0;
 }

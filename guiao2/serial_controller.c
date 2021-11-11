@@ -4,7 +4,41 @@ int alarmHandlerSet = 0, timeOut;
 
 void alarmCall() { timeOut = 1; }
 
+int openSerial(char *path, struct termios *oldConfig) {
+
+  // Opening file descriptor
+  int fd = open(path, O_RDWR | O_NOCTTY);
+  if (fd < 0) return -1;
+
+  // Saving old config
+  if (getConfig(fd, oldConfig) != 0) return -1;
+
+  // Getting new config
+  struct termios newConfig;
+  configNonCanonical(&newConfig);
+
+  // Flushing unread or not written data of SerialPort
+  tcflush(fd, TCIOFLUSH);
+
+  // Loading new config
+  if (loadConfig(fd, &newConfig) != 0) return -1;
+
+  return fd;
+}
+
+int closeSerial(int fd, struct termios oldConfig) {
+
+  // Recovering old config
+  if (loadConfig(fd, &oldConfig) != 0) return 1;
+
+  // Closing file descriptor
+  if (close(fd) != 0) return 1;
+
+  return 0;
+}
+
 SUFrameState SUFrameStateMachine(SUFrameState currentState, char byte) {
+
   static char address, control;
 
   switch (currentState) {
@@ -34,24 +68,6 @@ SUFrameState SUFrameStateMachine(SUFrameState currentState, char byte) {
   }
 
   return ERROR;
-}
-
-int communicateFrame(int fd, int attempts, int timer, char *data, char* status, int writeFirst) {
-  for (int attempt = 0; attempt <= attempts; ++attempt) {
-
-    if (attempt == 0) printf("> Sending frame...\n");
-    else printf("> Trying to send it again...\n");
-
-    if (writeFirst) {
-      if (write(fd, data, 5) < 5) continue; // TODO: variable com tamanho
-      if (receiveFrame(fd, timer, status) == 0) return 0;
-    } else {
-      if (receiveFrame(fd, timer, status) != 0) continue;
-      if (write(fd, data, 5) == 5) return 0;
-    }
-  }
-
-  return 1;
 }
 
 int receiveFrame(int fd, int timer, char *frame) {

@@ -6,55 +6,38 @@
 
 int main() {
 
-  int fd, res;
-  struct termios oldConfig, newConfig;
-  char buf[255];
+  struct termios oldConfig;
+  int fd = openSerial(MODEMDEVICE, &oldConfig);
+  if (fd < 0) return 1;
 
-  // Opening file descriptor
-  fd = open(MODEMDEVICE, O_RDWR | O_NOCTTY);
-  if (fd < 0) {
-    perror(MODEMDEVICE);
-    exit(1);
+  int stop = 0;
+  char data[5];
+
+  while (!stop) {
+
+    // Recieving data
+    printf("> Waiting for frame to be recieved...\n");
+    if (receiveFrame(fd, 0, data) != 0) return 1;
+
+    // Formatting frame to be sent
+    if (data[2] == C_SET) data[2] = C_UA;
+    else if (data[2] == C_DISC) stop = 1;
+    else return 1;                        // TODO: Change
+
+    data[3] = BCC(data[1], data[2]);
+
+    // Sending frame
+    printf("> Sending response...\n");
+    if (write(fd, data, 5) < 0) return 1;
   }
 
-  // Saving old config
-  if (getConfig(fd, &oldConfig) != 0) exit(1);
+  // Waiting for ACK
+  printf("> Waiting for final ACK to be recieved (DISC)...\n");
+  if (receiveFrame(fd, 0, data) != 0) return 1;
+  if (data[2] != C_UA) return 1;
 
-  // Getting new config
-  configNonCanonical(&newConfig);
-
-  // Flushing unread or not written data of SerialPort
-  tcflush(fd, TCIOFLUSH);
-
-  // Loading new config
-  if (loadConfig(fd, &newConfig) != 0) exit(1);
-
-  printf("> Waiting for frame to be recieved...\n");
-
-  // Recieving data
-  char data[5];
-  if (receiveFrame(fd, 0, data) == 1) exit(1);
-
-  //sleep(4);
-
-  // Formatting frame to be sent
-  if (data[2] == C_SET) data[2] = C_UA;
-  else if (data[2] == C_DISC) data[2] = C_DISC;
-  else exit(1);
-  data[3] = BCC(data[1], data[2]);
-
-  // Sending frame
-  write(fd, data, 5);
-
-  // Recovering old config
-  loadConfig(fd, &oldConfig);
-
-  // Closing file descriptor
-  close(fd);
+  // Closing serial
+  if (closeSerial(fd, oldConfig) != 0) return 1;
   
   return 0;
-}
-
-int establishConnection(int fd) {
-  
 }
