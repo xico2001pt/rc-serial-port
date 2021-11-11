@@ -44,9 +44,9 @@ int communicateFrame(int fd, int attempts, int timer, char *data, char* status, 
 
     if (writeFirst) {
       if (write(fd, data, 5) < 5) continue; // TODO: variable com tamanho
-      if (receiveFrame(fd, 3, status) == 0) return 0;
+      if (receiveFrame(fd, timer, status) == 0) return 0;
     } else {
-      if (receiveFrame(fd, 3, status) != 0) continue;
+      if (receiveFrame(fd, timer, status) != 0) continue;
       if (write(fd, data, 5) == 5) return 0;
     }
   }
