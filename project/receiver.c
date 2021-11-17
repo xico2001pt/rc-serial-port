@@ -11,7 +11,7 @@ int main() {
   if (fd < 0) return 1;
 
   int stop = 0;
-  char data[5];
+  char data[512];
 
   while (!stop) {
 
@@ -22,6 +22,11 @@ int main() {
     // Formatting frame to be sent
     if (data[2] == C_SET) data[2] = C_UA;
     else if (data[2] == C_DISC) stop = 1;
+    else if (data[2] == C_I(0)) {
+      for (int i = 4; i < 9; ++i) printf("%c", data[i]);
+      data[2] = C_RR(0);
+      data[4] = FLAG;
+    }
     else return 1;                        // TODO: Change
 
     data[3] = BCC(data[1], data[2]);

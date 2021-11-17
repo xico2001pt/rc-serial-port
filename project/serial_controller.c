@@ -100,6 +100,7 @@ int receiveFrame(int fd, int timer, char *frame) {
   timeOut = 0;
 
   while (!timeOut && state != STOP) {
+    printf("%d", state);
     n = read(fd, &byte, 1);
 
     if (n < 0) {          // Error on read()
