@@ -10,7 +10,7 @@ int connectReceiver(int port) {
   // Recieving data
   char data[5];
   printf("> Waiting for frame to be recieved...\n");
-  if (receiveFrame(fd, 0, data) != 0) return -1;
+  if (receiveFrame(fd, 0, data) != 5) return -1;
 
   // Verifying frame
   if (data[2] != C_SET) return -1;
@@ -21,8 +21,8 @@ int connectReceiver(int port) {
 
   // Sending frame
   printf("> Sending response...\n");
-  if (write(fd, data, 5) < 0) return -1;
-  
+  if (transmitFrame(fd, data, 5) < 0) return -1;
+
   return fd;
 }
 
@@ -30,18 +30,18 @@ int disconnectReceiver(int fd) {
   // Receiving DISC
   char data[5];
   printf("> Waiting for frame to be recieved...\n");
-  if (receiveFrame(fd, 0, data) != 0) return -1;
+  if (receiveFrame(fd, 0, data) != 5) return -1;
 
   // Verifying frame
   if (data[2] != C_DISC) return -1;
 
   // Sending same frame
   printf("> Sending response...\n");
-  if (write(fd, data, 5) < 0) return -1;
+  if (transmitFrame(fd, data, 5) < 0) return -1;
 
   // Waiting for ACK
   printf("> Waiting for final ACK to be recieved (DISC)...\n");
-  if (receiveFrame(fd, 0, data) != 0) return -1;
+  if (receiveFrame(fd, 0, data) != 5) return -1;
   if (data[2] != C_UA) return -1;
 
   // Closing serial

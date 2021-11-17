@@ -35,6 +35,6 @@ int llread(int fd, char *buffer) {
 
 }
 
-int llclose(int fd, ApplicationStatus status) {
-    return status == TRANSMITTER ? disconnectTransmitter(fd) : disconnectReceiver(fd);
+int llclose(int fd) {
+    
 }

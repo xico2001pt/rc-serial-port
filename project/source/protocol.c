@@ -12,7 +12,7 @@ static struct termios *oldConfig;
 int getConfig(int fd, struct termios *config) {
   if (tcgetattr(fd, config) == -1) {
     perror("tcgetattr");
-    return 1;
+    return -1;
   }
   return 0;
 }
@@ -20,7 +20,7 @@ int getConfig(int fd, struct termios *config) {
 int loadConfig(int fd, struct termios *config) {
   if (tcsetattr(fd, TCSANOW, config) == -1) {
     perror("tcsetattr");
-    return 1;
+    return -1;
   }
   return 0;
 }
@@ -69,12 +69,24 @@ int openSerial(int port) {
 int closeSerial(int fd) {
 
   // Recovering old config
-  if (loadConfig(fd, oldConfig) != 0) return 1;
+  if (loadConfig(fd, oldConfig) != 0) return -1;
 
   // Closing file descriptor
-  if (close(fd) != 0) return 1;
+  if (close(fd) != 0) return -1;
 
   return 0;
+}
+
+int transmitFrame(int fd, char *frame, int length) {
+  int len = length;
+  if (IS_I_CONTROL_BYTE(frame[2])) {
+    char bcc = frame[length - 2];
+    len = stuffing(frame + 4, length - 6) + 6;
+    frame[len - 2] = bcc;
+    frame[len - 1] = FLAG;
+  }
+  if (write(fd, frame, len) == len) return 0;
+  return -1;
 }
 
 int receiveFrame(int fd, int timer, char *frame) {
@@ -85,7 +97,6 @@ int receiveFrame(int fd, int timer, char *frame) {
     alarmHandlerSet = 1;
   }
 
-  char byte;
   FrameState state = START;
   int n, idx = 0;
 
@@ -95,32 +106,31 @@ int receiveFrame(int fd, int timer, char *frame) {
 
   while (!timeOut && state != STOP) {
     printf("%d", state);
-    n = read(fd, frame, 1);
+    n = read(fd, &frame[idx++], 1);
 
     if (n < 0) {          // Error on read()
       alarm(0);
-      return 1;
+      return -1;
     } else if (n == 0) {  // Nothing to read
       continue;
     } else if (n == 1) {  // Read one byte
 
-      //state = FrameStateMachine(state, byte);
-      frame[idx++] = byte;
+      state = FrameStateMachine(state, frame, &idx);
 
-      printf("0x%X\n", byte);   // Debug
+      printf("0x%X\n", frame[idx]);   // Debug
     }
   }
 
   alarm(0);
 
   // If timed-out
-  if (timeOut) return 1;
+  if (timeOut) return -1;
   
-  return 0;
+  return idx;
 }
 
-FrameState FrameStateMachine(FrameState currentState, char *frame, int length) {
-  char byte = frame[length-1];
+FrameState FrameStateMachine(FrameState currentState, char *frame, int *length) {
+  char byte = frame[*length - 1];
 
   switch (currentState) {
   case START:
@@ -143,8 +153,10 @@ FrameState FrameStateMachine(FrameState currentState, char *frame, int length) {
     break;
   case BCC1_RCV:
     if (byte == FLAG) {
-      int len = destuffing(frame + 4, length - 6);
-      if (calculateBCC(frame + 4, len)) return STOP;
+      int len = destuffing(frame + 4, *length - 6) + 6;
+      frame[len - 2] = frame[*length - 2];
+      frame[len - 1] = frame[*length - 1];
+      if (calculateBCC(frame + 4, len - 6) == frame[len - 2]) return STOP;
     }
     return BCC1_RCV;
   case STOP:
@@ -181,7 +193,6 @@ int destuffing(char *data, int length) {
 int stuffing(char *data, int length) {
   char aux[MAX_FRAME_SIZE];
   strncpy(aux, data, length);
-
   int size = 0;
   for (int x = 0; x < length; x++) {
     if (aux[x] == FLAG) {
