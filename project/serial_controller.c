@@ -37,31 +37,44 @@ int closeSerial(int fd, struct termios oldConfig) {
   return 0;
 }
 
-SUFrameState SUFrameStateMachine(SUFrameState currentState, char byte) {
-
-  static char address, control;
+FrameState FrameStateMachine(FrameState currentState, char byte) {
+  static char address, control, dataBCC;
 
   switch (currentState) {
   case START:
     if (byte == FLAG) return FLAG_RCV;
     break;
   case FLAG_RCV:
-    if (byte == A_EMITTER_RECEIVER) {
+    if (byte == A_EMITTER_RECEIVER || byte == A_RECEIVER_EMITTER) {
       address = byte;
       return A_RCV;
     }
     break;
   case A_RCV:
-    if (IS_CONTROL_BYTE(byte)) {
+    if (IS_SU_CONTROL_BYTE(byte) || IS_I_CONTROL_BYTE(byte)) {
       control = byte;
       return C_RCV;
     }
     break;
   case C_RCV:
-    if (byte == BCC(address, control)) return BCC_RCV;
+    if (byte == BCC(address, control)) {
+      if (IS_I_CONTROL_BYTE(control)) {
+        dataBCC = 0;
+        return BCC1_RCV;
+      }
+      return BCC_RCV;
+    }
     break;
   case BCC_RCV:
     if (byte == FLAG) return STOP;
+    break;
+  case BCC1_RCV:
+    if (byte == FLAG) {
+      if (dataBCC == 0) return STOP;
+    } else {
+      dataBCC = BCC(dataBCC, byte);
+      return BCC1_RCV;
+    }
     break;
   case STOP:
     return STOP;
@@ -79,7 +92,7 @@ int receiveFrame(int fd, int timer, char *frame) {
   }
 
   char byte;
-  SUFrameState state = START;
+  FrameState state = START;
   int n, idx = 0;
 
   // Setting alarm
@@ -95,7 +108,7 @@ int receiveFrame(int fd, int timer, char *frame) {
     } else if (n == 0) {  // Nothing to read
       continue;
     } else if (n == 1) {  // Read one byte
-      state = SUFrameStateMachine(state, byte);  // TODO: adpatar para tramas de informação
+      state = FrameStateMachine(state, byte);
       frame[idx++] = byte;
 
       printf("0x%X\n", byte);   // Debug
