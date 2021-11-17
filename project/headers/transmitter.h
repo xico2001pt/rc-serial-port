@@ -1,12 +1,12 @@
-#ifndef TRANSMITTER
-#define TRANSMITTER
+#ifndef TRANSMITTER_H
+#define TRANSMITTER_H
 
-int setTransmitterConnection(int port);
+int connectTransmitter(int port);
 
-int disconnectTransmitterConnection();
+int disconnectTransmitter(int fd);
 
 // Auxiliary Functions
 
 int communicateFrame(int fd, int attempts, int timer, char *data, int size, char *response);
 
-#endif // TRANSMITTER
+#endif // TRANSMITTER_H

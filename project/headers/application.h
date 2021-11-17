@@ -1,5 +1,5 @@
-#ifndef APPLICATION
-#define APPLICATION
+#ifndef APPLICATION_H
+#define APPLICATION_H
 
 typedef enum { TRANSMITTER, RECEIVER } ApplicationStatus;
 
@@ -40,8 +40,9 @@ int llread(int fd, char *buffer);
  * @brief 
  * 
  * @param fd File descriptor of the data link
+ * @param status
  * @return int Positive value on success or negative value on error
  */
-int llclose(int fd);
+int llclose(int fd, ApplicationStatus status);
 
-#endif // APPLICATION
+#endif // APPLICATION_H

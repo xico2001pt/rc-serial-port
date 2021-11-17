@@ -1,48 +1,51 @@
-#include "serial_config.h"
-#include "protocol.h"
-#include "serial_controller.h"
+#include "../headers/receiver.h"
+#include "../headers/protocol.h"
+#include <stdio.h>
+#include <unistd.h>
 
-#define MODEMDEVICE "/dev/ttyS11"
+int connectReceiver(int port) {
+  int fd = openSerial(port);
+  if (fd < 0) return -1;
 
-int main() {
+  // Recieving data
+  char data[5];
+  printf("> Waiting for frame to be recieved...\n");
+  if (receiveFrame(fd, 0, data) != 0) return -1;
 
-  struct termios oldConfig;
-  int fd = openSerial(MODEMDEVICE, &oldConfig);
-  if (fd < 0) return 1;
+  // Verifying frame
+  if (data[2] != C_SET) return -1;
 
-  int stop = 0;
-  char data[512];
+  // Formatting frame to be sent
+  data[2] = C_UA;
+  data[3] = BCC(data[1], data[2]);
 
-  while (!stop) {
+  // Sending frame
+  printf("> Sending response...\n");
+  if (write(fd, data, 5) < 0) return -1;
+  
+  return fd;
+}
 
-    // Recieving data
-    printf("> Waiting for frame to be recieved...\n");
-    if (receiveFrame(fd, 0, data) != 0) return 1;
+int disconnectReceiver(int fd) {
+  // Receiving DISC
+  char data[5];
+  printf("> Waiting for frame to be recieved...\n");
+  if (receiveFrame(fd, 0, data) != 0) return -1;
 
-    // Formatting frame to be sent
-    if (data[2] == C_SET) data[2] = C_UA;
-    else if (data[2] == C_DISC) stop = 1;
-    else if (data[2] == C_I(0)) {
-      for (int i = 4; i < 9; ++i) printf("%c", data[i]);
-      data[2] = C_RR(0);
-      data[4] = FLAG;
-    }
-    else return 1;                        // TODO: Change
+  // Verifying frame
+  if (data[2] != C_DISC) return -1;
 
-    data[3] = BCC(data[1], data[2]);
-
-    // Sending frame
-    printf("> Sending response...\n");
-    if (write(fd, data, 5) < 0) return 1;
-  }
+  // Sending same frame
+  printf("> Sending response...\n");
+  if (write(fd, data, 5) < 0) return -1;
 
   // Waiting for ACK
   printf("> Waiting for final ACK to be recieved (DISC)...\n");
-  if (receiveFrame(fd, 0, data) != 0) return 1;
-  if (data[2] != C_UA) return 1;
+  if (receiveFrame(fd, 0, data) != 0) return -1;
+  if (data[2] != C_UA) return -1;
 
   // Closing serial
-  if (closeSerial(fd, oldConfig) != 0) return 1;
+  if (closeSerial(fd) != 0) return -1;
   
-  return 0;
+  return 1;
 }
