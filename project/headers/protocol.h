@@ -1,6 +1,8 @@
 #ifndef PROTOCOL
 #define PROTOCOL
 
+#define BAUDRATE B38400
+
 #define FLAG 0b01111110
 
 // Campo de Endereço
@@ -17,5 +19,16 @@
 #define IS_SU_CONTROL_BYTE(byte)    byte == C_SET || byte == C_DISC || byte == C_UA || (byte & 0b1111111) == C_RR(0) || (byte & 0b1111111) == C_REJ(0)
 #define IS_I_CONTROL_BYTE(byte)     (byte & 0b10111111) == C_I(0)
 #define BCC(B1, B2)                 B1 ^ B2
+
+typedef enum {START, FLAG_RCV, A_RCV, C_RCV, BCC_RCV, BCC1_RCV, STOP, ERROR} FrameState;
+
+int getConfig(int fd, struct termios *config);
+int loadConfig(int fd, struct termios *config);
+void configNonCanonical(struct termios *config);
+int openSerial(char *path);
+int closeSerial(int fd);
+
+int receiveFrame(int fd, int timer, char *frame);
+FrameState FrameStateMachine(FrameState currentState, char byte);
 
 #endif // PROTOCOL

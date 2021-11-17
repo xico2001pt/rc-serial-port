@@ -25,21 +25,6 @@ char calculateBCC(char *data, int length) {
 
 int main() {
 
-  struct termios oldConfig;
-  int fd = openSerial(MODEMDEVICE, &oldConfig);
-  if (fd < 0) return 1;
-
-  char response[5], data[5] = {FLAG, A_EMITTER_RECEIVER, C_SET, BCC(A_EMITTER_RECEIVER, C_SET), FLAG};
-
-  // Sending SET frame and waiting for ACK
-  if (communicateFrame(fd, 3, 3, data, 5, response) != 0) return 1;
-  if (response[2] != C_UA) return 1;
-
-  // Sending information frame
-  char info[11] = {FLAG, A_EMITTER_RECEIVER, C_I(0), BCC(A_EMITTER_RECEIVER, C_I(0)), 'H', 'E', 'L', 'L', 'O', calculateBCC("HELLO", 5), FLAG};
-  if (communicateFrame(fd, 3, 3, info, 11, response) != 0) return 1;
-  if (response[2] != C_RR(0)) return 1;
-
   // Sending DISC frame, waiting for DISC and sending back ACK
   data[2] = C_DISC;
   data[3] = BCC(data[1], data[2]);
