@@ -8,6 +8,9 @@
 #include <string.h>
 
 static struct termios *oldConfig;
+int alarmHandlerSet = 0, timeOut;
+
+void alarmCall() { timeOut = 1; }
 
 int getConfig(int fd, struct termios *config) {
   if (tcgetattr(fd, config) == -1) {
@@ -36,10 +39,6 @@ void configNonCanonical(struct termios *config) {
   config->c_cc[VTIME]    = 1;   /* inter-character timer unused */
   config->c_cc[VMIN]     = 0;   /* blocking read until 1 char received */
 }
-
-int alarmHandlerSet = 0, timeOut;
-
-void alarmCall() { timeOut = 1; }
 
 int openSerial(int port) {
 
@@ -137,7 +136,7 @@ FrameState FrameStateMachine(FrameState currentState, char *frame, int *length) 
     if (byte == FLAG) return FLAG_RCV;
     break;
   case FLAG_RCV:
-    if (byte == A_EMITTER_RECEIVER || byte == A_RECEIVER_EMITTER) return A_RCV;
+    if (byte == A_TRANSMITTER_RECEIVER || byte == A_RECEIVER_TRANSMITTER) return A_RCV;
     break;
   case A_RCV:
     if (IS_SU_CONTROL_BYTE(byte) || IS_I_CONTROL_BYTE(byte)) return C_RCV;

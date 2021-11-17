@@ -11,8 +11,8 @@
 #define ESCAPE_STUFFING 0x5D
 
 // Campo de Endereço
-#define A_EMITTER_RECEIVER 0x03  // Comandos enviados pelo Emissor e Respostas enviadas pelo Receptor
-#define A_RECEIVER_EMITTER 0x01  // Comandos enviados pelo Receptor e Respostas enviadas pelo Emissor
+#define A_TRANSMITTER_RECEIVER 0x03  // Comandos enviados pelo Emissor e Respostas enviadas pelo Receptor
+#define A_RECEIVER_TRANSMITTER 0x01  // Comandos enviados pelo Receptor e Respostas enviadas pelo Emissor
 
 // Campo de Controlo
 #define C_SET                       0b00000011  // Set up
@@ -26,6 +26,7 @@
 #define BCC(B1, B2)                 B1 ^ B2
 
 #define MAX_FRAME_SIZE 512
+#define SU_FRAME_SIZE 5
 
 typedef enum {START, FLAG_RCV, A_RCV, C_RCV, BCC_RCV, BCC1_RCV, STOP, ERROR} FrameState;
 
