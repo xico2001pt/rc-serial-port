@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "receiver.h": "c",
-        "protocol.h": "c",
-        "application.h": "c",
-        "transmitter.h": "c",
-        "strings.h": "c"
-    }
-}
