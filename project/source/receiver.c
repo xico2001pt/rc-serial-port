@@ -1,51 +1,85 @@
 #include "../headers/receiver.h"
 #include "../headers/protocol.h"
+#include "../headers/auxiliary.h"
 #include <stdio.h>
-#include <unistd.h>
+#include <string.h>
 
 int connectReceiver(int port) {
   int fd = openSerial(port);
   if (fd < 0) return -1;
 
   // Recieving data
-  char data[SU_FRAME_SIZE];
-  printf("> Waiting for frame to be recieved...\n");
-  if (receiveFrame(fd, 0, data) != SU_FRAME_SIZE) return -1;
+  char frame[SU_FRAME_SIZE];
+  #ifdef DEBUG
+    printf("> Awaiting SET frame to be recieved\n");
+  #endif
+  if (receiveFrame(fd, 0, frame) != SU_FRAME_SIZE) return -1;
 
   // Verifying frame
-  if (data[2] != C_SET) return -1;
+  if (frame[2] != C_SET) return -1;
 
   // Formatting frame to be sent
-  data[2] = C_UA;
-  data[3] = BCC(data[1], data[2]);
+  createSUFrame(frame, C_UA);
 
   // Sending frame
-  printf("> Sending response...\n");
-  if (transmitFrame(fd, data, SU_FRAME_SIZE) < 0) return -1;
+  #ifdef DEBUG
+    printf("> Sending UA reponse\n");
+  #endif
+  if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
 
   return fd;
 }
 
 int disconnectReceiver(int fd) {
   // Receiving DISC
-  char data[SU_FRAME_SIZE];
-  printf("> Waiting for frame to be recieved...\n");
-  if (receiveFrame(fd, 0, data) != SU_FRAME_SIZE) return -1;
+  char frame[SU_FRAME_SIZE];
+  #ifdef DEBUG
+    printf("> Awaiting reception of DISC\n");
+  #endif
+  if (receiveFrame(fd, 0, frame) != SU_FRAME_SIZE) return -1;
 
   // Verifying frame
-  if (data[2] != C_DISC) return -1;
+  if (frame[2] != C_DISC) return -1;
 
   // Sending same frame
-  printf("> Sending response...\n");
-  if (transmitFrame(fd, data, SU_FRAME_SIZE) < 0) return -1;
+  #ifdef DEBUG
+    printf("> Sending DISC response\n");
+  #endif
+  if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
 
   // Waiting for ACK
-  printf("> Waiting for final ACK to be recieved (DISC)...\n");
-  if (receiveFrame(fd, 0, data) != SU_FRAME_SIZE) return -1;
-  if (data[2] != C_UA) return -1;
+  #ifdef DEBUG
+    printf("> Awaiting reception of UA\n");
+  #endif
+  if (receiveFrame(fd, 0, frame) != SU_FRAME_SIZE) return -1;
+  if (frame[2] != C_UA) return -1;
 
   // Closing serial
   if (closeSerial(fd) != 0) return -1;
   
-  return 1;
+  return 0;
+}
+
+int recievePacket(int fd, char *packet) {
+  char frame[MAX_FRAME_SIZE];
+  int len;
+
+  // Awaiting reception of frame
+  if ((len = receiveFrame(fd, 0, frame)) < 0) return -1;
+
+  // Checking control byte
+  if (frame[2] != C_RR(0) && frame[2] != C_RR(1)) return -1;
+
+  // Copying array and changing length accordingly
+  len -= 6;
+  strncpy(packet, frame + 4, len);
+
+  // Creating response
+  if (frame[2] == C_RR(0)) createSUFrame(frame, C_RR(1));
+  else if (frame[2] == C_RR(1)) createSUFrame(frame, C_RR(0));
+
+  // Sendind response
+  if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
+
+  return len;
 }

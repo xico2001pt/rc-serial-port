@@ -7,7 +7,7 @@
 #include <signal.h>
 #include <string.h>
 
-static struct termios *oldConfig;
+static struct termios oldConfig;
 int alarmHandlerSet = 0, timeOut;
 
 void alarmCall() { timeOut = 1; }
@@ -41,7 +41,6 @@ void configNonCanonical(struct termios *config) {
 }
 
 int openSerial(int port) {
-
   char path[20];
   snprintf(path, 20, "/dev/ttyS%d", port);
 
@@ -50,7 +49,7 @@ int openSerial(int port) {
   if (fd < 0) return -1;
 
   // Saving old config
-  if (getConfig(fd, oldConfig) != 0) return -1;
+  if (getConfig(fd, &oldConfig) != 0) return -1;
 
   // Getting new config
   struct termios newConfig;
@@ -66,9 +65,8 @@ int openSerial(int port) {
 }
 
 int closeSerial(int fd) {
-
   // Recovering old config
-  if (loadConfig(fd, oldConfig) != 0) return -1;
+  if (loadConfig(fd, &oldConfig) != 0) return -1;
 
   // Closing file descriptor
   if (close(fd) != 0) return -1;
@@ -77,6 +75,13 @@ int closeSerial(int fd) {
 }
 
 int transmitFrame(int fd, char *frame, int length) {
+
+  #ifdef DEBUG
+    printf("Transmitting:");
+    for (int n = 0; n < length; ++n) printf(" 0x%02X", frame[n]);
+    printf("\n");
+  #endif
+
   int len = length;
   if (IS_I_CONTROL_BYTE(frame[2])) {
     char bcc = frame[length - 2];
@@ -84,8 +89,8 @@ int transmitFrame(int fd, char *frame, int length) {
     frame[len - 2] = bcc;
     frame[len - 1] = FLAG;
   }
-  if (write(fd, frame, len) == len) return 0;
-  return -1;
+  if (write(fd, frame, len) < 0) return -1;
+  return 0;
 }
 
 int receiveFrame(int fd, int timer, char *frame) {
@@ -97,6 +102,7 @@ int receiveFrame(int fd, int timer, char *frame) {
   }
 
   FrameState state = START;
+  char byte;
   int n, idx = 0;
 
   // Setting alarm
@@ -104,8 +110,7 @@ int receiveFrame(int fd, int timer, char *frame) {
   timeOut = 0;
 
   while (!timeOut && state != STOP) {
-    printf("%d", state);
-    n = read(fd, &frame[idx++], 1);
+    n = read(fd, &byte, 1);
 
     if (n < 0) {          // Error on read()
       alarm(0);
@@ -113,10 +118,8 @@ int receiveFrame(int fd, int timer, char *frame) {
     } else if (n == 0) {  // Nothing to read
       continue;
     } else if (n == 1) {  // Read one byte
-
+      frame[idx++] = byte;
       state = FrameStateMachine(state, frame, &idx);
-
-      printf("0x%X\n", frame[idx]);   // Debug
     }
   }
 
@@ -124,6 +127,12 @@ int receiveFrame(int fd, int timer, char *frame) {
 
   // If timed-out
   if (timeOut) return -1;
+
+  #ifdef DEBUG
+    printf("Recieved:    ");
+    for (int n = 0; n < idx; ++n) printf(" 0x%02X", frame[n]);
+    printf("\n");
+  #endif
   
   return idx;
 }

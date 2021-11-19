@@ -1,30 +1,42 @@
 #ifndef TRANSMITTER_H
 #define TRANSMITTER_H
 
+/**
+ * @brief Settles the connection between transmitter and reciever
+ * 
+ * @param port  Number of port of the serial port
+ * @return int  Returns -1 on error, fd of serial port when it's successful
+ */
 int connectTransmitter(int port);
 
+/**
+ * @brief Disconnects the connection between transmitter and reciever
+ * 
+ * @param fd    File descriptor of the serial port
+ * @return int  Returns -1 on error, 0 when it's successful
+ */
 int disconnectTransmitter(int fd);
 
-//---------------------------------- Auxiliary Functions ----------------------------------
-
+/**
+ * @brief Tries to send the frame the given times to the reciever. It tries again if either nothing is recieved after the given seconds or the transmission fails
+ * 
+ * @param fd        File descriptor of the serial port
+ * @param attempts  Number of attempts (>= 1)
+ * @param timer     Time in seconds for time out (0 means that it'll never time out)
+ * @param frame     Array that contains the data to be written and the response afterwards
+ * @param size      Size in bytes of the array to be sent
+ * @return int      Returns -1 on error and the length of the response when it's successful
+ */
 int communicateFrame(int fd, int attempts, int timer, char *frame, int size);
 
 /**
- * @brief Creates supervisory/unnunbered frames
+ * @brief Formats the packet into a frame and sends it
  * 
- * @param frame     Array of chars to be modified with the correct formatation
- * @param control   Control byte (can be SET, DISC, UA, RR or REJ)
+ * @param fd        File descriptor of the serial port
+ * @param packet    Packet to be sent
+ * @param length    Length of the packet to be sent
+ * @return int      Returns -1 on error, 0 when it's successful
  */
-void createSUFrame(char *frame, char control);
-
-/**
- * @brief Creates information frames
- * 
- * @param frame     Array of chars to be modified with the correct formatation
- * @param control   Control byte (can be SET, DISC, UA, RR or REJ)
- * @param data      Array containing the data to be transmitted
- * @param length    Number of bytes in the data array
- */
-void createIFrame(char *frame, char control, char *data, int length);
+int transmitPacket(int fd, char *packet, int length);
 
 #endif // TRANSMITTER_H

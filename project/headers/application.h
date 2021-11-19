@@ -40,8 +40,9 @@ int llread(int fd, char *buffer);
  * @brief 
  * 
  * @param fd        File descriptor of the data link
+ * @param status    Status of the application (TRANSMITTER | RECEIVER)          // TODO: Remove this? We think we need this for this to work
  * @return int      Positive value on success or negative value on error
  */
-int llclose(int fd);
+int llclose(int fd, ApplicationStatus status);
 
 #endif // APPLICATION_H

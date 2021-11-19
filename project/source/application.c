@@ -1,26 +1,25 @@
 #include "../headers/application.h"
 #include "../headers/transmitter.h"
 #include "../headers/receiver.h"
-
-// TESTING
-#include "../headers/protocol.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 int main(int argc, char **argv) {
-    // if argv[1] == 0, então é transmitter
-    // senão, é o receiver
-    //llopen();
 
-    char data[200] = {FLAG, FLAG, 0x7e, 0x5e, 0x7d, 0x5e, 0x7e};
-    for (int n = 0; n < 7; n++) printf("%X ", data[n]);
-    printf("\n");
-    int len = stuffing(data, 7);
-    for (int n = 0; n < len; n++) printf("%X ", data[n]);
-    printf("\n");
-    len = destuffing(data, len);
-    printf("%d\n", len);
-    for (int n = 0; n < len; n++) printf("%X ", data[n]);
-    printf("\n");
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s [0-Transmitter OR 1-Receiver] [Port Number]\n", argv[0]);
+        return -1;
+    }
+
+    ApplicationStatus status = atoi(argv[1]);       // TODO: Change atoi() to strtoi() to check for errors
+    int port = atoi(argv[2]);
+
+    int fd;
+    if ((fd = llopen(port, status)) < 0) return -1;
+
+    if (llclose(fd, status) < 0) return -1;
+
+    return 0;
 }
 
 int llopen(int port, ApplicationStatus status) {
@@ -28,13 +27,13 @@ int llopen(int port, ApplicationStatus status) {
 }
 
 int llwrite(int fd, char *buffer, int length) {
-
+    return transmitPacket(fd, buffer, length);  // TODO: Format packet to be sent
 }
 
 int llread(int fd, char *buffer) {
-
+    return recievePacket(fd, buffer);           // TODO: Check packet format
 }
 
-int llclose(int fd) {
-    
+int llclose(int fd, ApplicationStatus status) {
+    return status == TRANSMITTER ? disconnectTransmitter(fd) : disconnectReceiver(fd);
 }
