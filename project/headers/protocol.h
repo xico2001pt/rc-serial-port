@@ -25,7 +25,7 @@
 #define IS_I_CONTROL_BYTE(byte)     (byte & 0b10111111) == C_I(0)
 #define BCC(B1, B2)                 B1 ^ B2
 
-#define MAX_FRAME_SIZE 512
+#define MAX_FRAME_SIZE 1030
 #define SU_FRAME_SIZE 5
 
 typedef enum {START, FLAG_RCV, A_RCV, C_RCV, BCC_RCV, BCC1_RCV, STOP, ERROR} FrameState;
@@ -128,5 +128,23 @@ int destuffing(char *data, int length);
  * @return int      Length of the new data
  */
 int stuffing(char *data, int length);
+
+/**
+ * @brief Creates supervisory/unnunbered frames
+ * 
+ * @param frame     Array of chars to be modified with the correct formatation
+ * @param control   Control byte (can be SET, DISC, UA, RR or REJ)
+ */
+void createSUFrame(char *frame, char control);
+
+/**
+ * @brief Creates information frames
+ * 
+ * @param frame     Array of chars to be modified with the correct formatation
+ * @param control   Control byte (can be SET, DISC, UA, RR or REJ)
+ * @param data      Array containing the data to be transmitted
+ * @param length    Number of bytes in the data array
+ */
+void createIFrame(char *frame, char control, char *data, int length);
 
 #endif // PROTOCOL_H

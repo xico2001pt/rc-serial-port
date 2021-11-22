@@ -69,7 +69,7 @@ int transmitPacket(int fd, char *packet, int length) {
 
   // Failsafe
   if (length + 6 > MAX_FRAME_SIZE) {
-    fprintf(stderr, "transmitPacket(): Frame incapable of storing packet (default size = 512 bytes) (Frame can store up to (512-6)/2 = 253 bytes of data safely!)\n");
+    fprintf(stderr, "transmitPacket(): Frame incapable of storing packet (default size = 1030 bytes) (Frame can store up to (1030-6)/2 = 512 bytes of data safely!)\n");
     return -1;
   }
 

@@ -1,22 +1,10 @@
 #ifndef AUXILIARY_H
 #define AUXILIARY_H
 
-/**
- * @brief Creates supervisory/unnunbered frames
- * 
- * @param frame     Array of chars to be modified with the correct formatation
- * @param control   Control byte (can be SET, DISC, UA, RR or REJ)
- */
-void createSUFrame(char *frame, char control);
+int pathToFilename(char *filename, char *path, int pathLength);
 
-/**
- * @brief Creates information frames
- * 
- * @param frame     Array of chars to be modified with the correct formatation
- * @param control   Control byte (can be SET, DISC, UA, RR or REJ)
- * @param data      Array containing the data to be transmitted
- * @param length    Number of bytes in the data array
- */
-void createIFrame(char *frame, char control, char *data, int length);
+int createControlPacket(char *buffer, char control, int size, char *fileName, char fileNameSize);
+
+int createDataPacket(char *buffer, char sequence, char *data, int dataLength);
 
 #endif // AUXILIARY_H
