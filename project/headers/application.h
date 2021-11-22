@@ -7,9 +7,12 @@ typedef enum { TRANSMITTER, RECEIVER } ApplicationStatus;
 #define HEADER_SIZE     4
 #define MAX_DATA_SIZE   (MAX_PACKET_SIZE - HEADER_SIZE)
 
-#define C_DATA      1
-#define C_START     2
-#define C_END       3
+#define C_DATA  1
+#define C_START 2
+#define C_END   3
+
+#define T_FILE_SIZE 0
+#define T_FILE_NAME 1
 
 /*typedef struct {
     int fileDescriptor;

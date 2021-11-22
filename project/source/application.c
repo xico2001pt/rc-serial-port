@@ -38,32 +38,48 @@ int transmitFile(int fd, char *filePath, int pathLength) {
     struct stat st;
     if (fstat(file, &st) < 0) return -1;
 
-    char data[MAX_DATA_SIZE], packet[MAX_PACKET_SIZE];
-
-    char fileName[100];
+    char fileName[100], data[MAX_DATA_SIZE], packet[MAX_PACKET_SIZE];                                   // TODO: Change fileName size so that it can't be overflowed in pathToFilename's strcpy()
     int fileNameLength = pathToFilename(fileName, filePath, pathLength);
 
     // Creating and transmitting start control packet
-    int packetSize = createControlPacket(packet, C_START, st.st_size, fileName, fileNameLength);        // TODO: Change filePath to the name of the file (create a function that reveives a path and returns the file name perhaps?)
-    if (llwrite(fd, packet, packetSize) < 0) return -1;
+    int packetLength = createControlPacket(packet, C_START, st.st_size, fileName, fileNameLength);        // TODO: Change filePath to the name of the file (create a function that reveives a path and returns the file name perhaps?)
+    if (llwrite(fd, packet, packetLength) < 0) return -1;
 
     int dataLength, n = 0;
     while ((dataLength = read(fd, data, MAX_DATA_SIZE)) != 0) {
-        packetSize = createDataPacket(packet, n++, data, dataLength);
-        if (llwrite(fd, packet, packetSize) < 0) return -1;
+        packetLength = createDataPacket(packet, n++, data, dataLength);
+        if (llwrite(fd, packet, packetLength) < 0) return -1;
     }
 
     // Creating and transmitting start control packet
-    packetSize = createControlPacket(packet, C_END, st.st_size, fileName, fileNameLength);
-    if (llwrite(fd, packet, packetSize) < 0) return -1;
+    packetLength = createControlPacket(packet, C_END, st.st_size, fileName, fileNameLength);
+    if (llwrite(fd, packet, packetLength) < 0) return -1;
 
     // Closing file
+    if (close(fd) < 0) return -1;
 
     return 0;
 }
 
 int receiveFile(int fd) {
+    int packet[MAX_PACKET_SIZE];
+    int packetLength;
+    
+    // Reading start control packet
+    if ((packetLength = llread(fd, packet)) < 0) return -1;
+    if (packet[0] != C_START) return -1;
 
+    int size;
+    char fileName[100];
+    for (int i = 1; i < packetLength;) {
+        if (packet[i] == T_FILE_SIZE) {
+            size = packet[i+2];
+            i += 4;
+        } else if (packet[i] == T_FILE_NAME) {
+            
+        }
+    }
+    
 }
 
 int llopen(int port, ApplicationStatus status) {
@@ -71,36 +87,6 @@ int llopen(int port, ApplicationStatus status) {
 }
 
 int llwrite(int fd, char *buffer, int length) {
-/*
-    // Create start control packet
-    char packet[MAX_PACKET_SIZE], *ptr = buffer;
-    int packetSize = createControlPacket(packet, C_START, length, "pinguim.gif", 12), n = 0, dataLength;
-
-    // Transmit packet
-    if (transmitPacket(fd, packet, packetSize) < 0) return -1;
-
-    while (length > 0) {
-        dataLength = length >= MAX_DATA_SIZE ? MAX_DATA_SIZE : length;
-        packetSize = createDataPacket(packet, n, ptr, dataLength);
-        if (transmitPacket(fd, packet, packetSize) < 0) return -1;
-        length -= dataLength;
-        ptr += dataLength;
-    }
-
-    packetSize = createControlPacket(packet, C_START, length, "pinguim.gif", 12);
-    
-*/
-    // para cada fragmento do buffer
-        // createData
-        //transmit
-        // se erro, -1
-        //length -= 508
-        // ptr += 508
-    
-    // mandar end control packet
-    // se erro, -1
-
-
     return transmitPacket(fd, buffer, length);
 }
 
