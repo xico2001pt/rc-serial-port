@@ -78,9 +78,12 @@ int transmitFrame(int fd, char *frame, int length) {
 
   #ifdef DEBUG
     printf("Transmitting:");
-    for (int n = 0; n < length; ++n) printf(" 0x%02X", frame[n]);
+    for (int n = 0; n < length; ++n) printf(" 0x%02hhX", frame[n]);
     printf("\n");
   #endif
+
+  for (int n = 0; n < length; ++n) printf(" 0x%02hhX", frame[n]);
+  printf("\n");
 
   char frameCopy[MAX_FRAME_SIZE];
   memcpy(frameCopy, frame, length);
@@ -136,9 +139,12 @@ int receiveFrame(int fd, int timer, char *frame) {
 
   #ifdef DEBUG
     printf("Recieved:    ");
-    for (int n = 0; n < idx; ++n) printf(" 0x%02X", frame[n]);
+    for (int n = 0; n < idx; ++n) printf(" 0x%02hhX", frame[n]);
     printf("\n");
   #endif
+
+  for (int n = 0; n < idx; ++n) printf(" 0x%02hhX", frame[n]);
+  printf("\n");
   
   return idx;
 }
@@ -170,6 +176,7 @@ FrameState FrameStateMachine(FrameState currentState, char *frame, int *length) 
       int len = destuffing(frame + 4, *length - 6) + 6;
       frame[len - 2] = frame[*length - 2];
       frame[len - 1] = frame[*length - 1];
+      *length = len;
       if (calculateBCC(frame + 4, len - 6) == frame[len - 2]) return STOP;
       else break;
     }
@@ -189,7 +196,7 @@ char calculateBCC(char *data, int length) {
 
 int destuffing(char *data, int length) {
   int size = 0;
-  for (int x = 0; x < length; ++x) {
+  for (int x = 0; x < length; ++x, ++size) {
     if (data[x] == ESCAPE && data[x+1] == FLAG_STUFFING) {
       data[size] = FLAG;
       x += 1;
@@ -199,7 +206,6 @@ int destuffing(char *data, int length) {
     } else {
       data[size] = data[x];
     }
-    size++;
   }
   return size;
 }
