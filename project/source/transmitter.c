@@ -76,7 +76,7 @@ int transmitPacket(int fd, char *packet, int length) {
   char frame[MAX_FRAME_SIZE];
 
   // Creating the frame to be sent
-  createIFrame(frame, C_RR(S), packet, length);
+  createIFrame(frame, C_I(S), packet, length);
   
   // Sending frame and receiving a response
   if (communicateFrame(fd, 3, 3, frame, length + 6) != SU_FRAME_SIZE) return -1;

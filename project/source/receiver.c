@@ -68,11 +68,11 @@ int recievePacket(int fd, char *packet) {
   if ((len = receiveFrame(fd, 0, frame)) < 0) return -1;
 
   // Checking control byte
-  if (frame[2] != C_RR(0) && frame[2] != C_RR(1)) return -1;
+  if (frame[2] != C_I(0) && frame[2] != C_I(1)) return -1;
 
   // Copying array and changing length accordingly
   len -= 6;
-  strncpy(packet, frame + 4, len);
+  memcpy(packet, frame + 4, len);
 
   // Creating response
   if (frame[2] == C_RR(0)) createSUFrame(frame, C_RR(1));

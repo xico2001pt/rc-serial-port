@@ -82,14 +82,17 @@ int transmitFrame(int fd, char *frame, int length) {
     printf("\n");
   #endif
 
+  char frameCopy[MAX_FRAME_SIZE];
+  memcpy(frameCopy, frame, length);
+
   int len = length;
-  if (IS_I_CONTROL_BYTE(frame[2])) {
-    char bcc = frame[length - 2];
-    len = stuffing(frame + 4, length - 6) + 6;
-    frame[len - 2] = bcc;
-    frame[len - 1] = FLAG;
+  if (IS_I_CONTROL_BYTE(frameCopy[2])) {
+    char bcc = frameCopy[length - 2];
+    len = stuffing(frameCopy + 4, length - 6) + 6;
+    frameCopy[len - 2] = bcc;
+    frameCopy[len - 1] = FLAG;
   }
-  if (write(fd, frame, len) < 0) return -1;
+  if (write(fd, frameCopy, len) < 0) return -1;
   return 0;
 }
 
@@ -111,7 +114,7 @@ int receiveFrame(int fd, int timer, char *frame) {
 
   while (!timeOut && state != STOP) {
     n = read(fd, &byte, 1);
-
+    
     if (n < 0) {          // Error on read()
       alarm(0);
       return -1;
@@ -119,7 +122,10 @@ int receiveFrame(int fd, int timer, char *frame) {
       continue;
     } else if (n == 1) {  // Read one byte
       frame[idx++] = byte;
-      state = FrameStateMachine(state, frame, &idx);
+      if ((state = FrameStateMachine(state, frame, &idx)) == ERROR) {
+        alarm(0);
+        return -1;
+      }
     }
   }
 
@@ -165,6 +171,7 @@ FrameState FrameStateMachine(FrameState currentState, char *frame, int *length) 
       frame[len - 2] = frame[*length - 2];
       frame[len - 1] = frame[*length - 1];
       if (calculateBCC(frame + 4, len - 6) == frame[len - 2]) return STOP;
+      else break;
     }
     return BCC1_RCV;
   case STOP:
@@ -182,16 +189,15 @@ char calculateBCC(char *data, int length) {
 
 int destuffing(char *data, int length) {
   int size = 0;
-  for (int x = 0; x < length - 1;) {
+  for (int x = 0; x < length; ++x) {
     if (data[x] == ESCAPE && data[x+1] == FLAG_STUFFING) {
       data[size] = FLAG;
-      x += 2;
+      x += 1;
     } else if (data[x] == ESCAPE && data[x+1] == ESCAPE_STUFFING) {
       data[size] = ESCAPE;
-      x += 2;
+      x += 1;
     } else {
       data[size] = data[x];
-      x += 1;
     }
     size++;
   }
@@ -200,7 +206,7 @@ int destuffing(char *data, int length) {
 
 int stuffing(char *data, int length) {
   char aux[MAX_FRAME_SIZE];
-  strncpy(aux, data, length);
+  memcpy(aux, data, length);
   int size = 0;
   for (int x = 0; x < length; x++) {
     if (aux[x] == FLAG) {
@@ -219,7 +225,7 @@ void createSUFrame(char *frame, char control) {
   frame[0] = FLAG;
   frame[1] = A_TRANSMITTER_RECEIVER;
   frame[2] = control;
-  frame[3] = BCC(frame[2], frame[3]);
+  frame[3] = BCC(frame[1], frame[2]);
   frame[4] = FLAG;
 }
 
@@ -227,8 +233,8 @@ void createIFrame(char *frame, char control, char *data, int length) {
   frame[0] = FLAG;
   frame[1] = A_TRANSMITTER_RECEIVER;
   frame[2] = control;
-  frame[3] = BCC(frame[2], frame[3]);
-  strncpy(frame + 4, data, length);
+  frame[3] = BCC(frame[1], frame[2]);
+  memcpy(frame + 4, data, length);
   frame[length + 6 - 2] = calculateBCC(data, length);
   frame[length + 6 - 1] = FLAG;
 }

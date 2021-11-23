@@ -9,10 +9,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
+
+static ApplicationStatus applicationStatus;
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s [0-Transmitter OR 1-Receiver] [Port Number]\n", argv[0]);
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s [0-Transmitter OR 1-Receiver] [Port Number] [Filename]\n", argv[0]);
         return -1;
     }
 
@@ -22,11 +25,34 @@ int main(int argc, char **argv) {
     int fd;
     if ((fd = llopen(port, status)) < 0) return -1;
 
-    //if ()
+    if (applicationStatus == TRANSMITTER) {
+        if (transmitFile(fd, argv[3], strlen(argv[3])) < 0) return -1;
+    } else {
+        if (receiveFile(fd)) return -1;
+    }
 
-    if (llclose(fd, status) < 0) return -1;
+    if (llclose(fd) < 0) return -1;
 
     return 0;
+}
+
+int llopen(int port, ApplicationStatus status) {
+    applicationStatus = status;
+    return applicationStatus == TRANSMITTER ? connectTransmitter(port) : connectReceiver(port);
+}
+
+int llwrite(int fd, char *buffer, int length) {
+    if (applicationStatus == RECEIVER) return -1;
+    return transmitPacket(fd, buffer, length);
+}
+
+int llread(int fd, char *buffer) {
+    if (applicationStatus == TRANSMITTER) return -1;
+    return recievePacket(fd, buffer);
+}
+
+int llclose(int fd) {
+    return applicationStatus == TRANSMITTER ? disconnectTransmitter(fd) : disconnectReceiver(fd);
 }
 
 int transmitFile(int fd, char *filePath, int pathLength) {
@@ -46,7 +72,7 @@ int transmitFile(int fd, char *filePath, int pathLength) {
     if (llwrite(fd, packet, packetLength) < 0) return -1;
 
     int dataLength, n = 0;
-    while ((dataLength = read(fd, data, MAX_DATA_SIZE)) != 0) {
+    while ((dataLength = read(file, data, MAX_DATA_SIZE)) != 0) {
         packetLength = createDataPacket(packet, n++, data, dataLength);
         if (llwrite(fd, packet, packetLength) < 0) return -1;
     }
@@ -56,56 +82,44 @@ int transmitFile(int fd, char *filePath, int pathLength) {
     if (llwrite(fd, packet, packetLength) < 0) return -1;
 
     // Closing file
-    if (close(fd) < 0) return -1;
+    if (close(file) < 0) return -1;
 
     return 0;
 }
 
 int receiveFile(int fd) {
-    int packet[MAX_PACKET_SIZE];
+    char packet[MAX_PACKET_SIZE];
     int packetLength;
     
     // Reading start control packet
     if ((packetLength = llread(fd, packet)) < 0) return -1;
     if (packet[0] != C_START) return -1;
 
-    int size;
+    // Parse data from control packet
+    int fileSize;
     char fileName[100];
-    for (int i = 1; i < packetLength;) {
-        if (packet[i] == T_FILE_SIZE) {
-            size = packet[i+2];
-            i += 4;
-        } else if (packet[i] == T_FILE_NAME) {
-            
+    if ((fileSize = parseControlPacket(packet, packetLength, fileName)) < 0) return -1;
+
+    // Opening file
+    int file = open(fileName, O_WRONLY | O_TRUNC | O_CREAT, 0777);
+    if (file < 0) return -1;
+
+    int k, stop = 0;
+    while (!stop) {
+        if ((packetLength = llread(fd, packet)) < 0) return -1;
+        if (packet[0] == C_DATA) {
+            // TODO: DO SMTHING WITH N
+            // TODO: ASSERT K == LENGTH - 4
+            if (write(file, packet + 4, packetLength - 4) < 0) return -1;
+        } else if (packet[0] == C_END) {
+            stop = 1;
+        } else {
+            return -1;
         }
     }
-    
-}
 
-int llopen(int port, ApplicationStatus status) {
-    return status == TRANSMITTER ? connectTransmitter(port) : connectReceiver(port);
-}
+    // Closing file
+    if (close(file) < 0) return -1;
 
-int llwrite(int fd, char *buffer, int length) {
-    return transmitPacket(fd, buffer, length);
-}
-
-int llread(int fd, char *buffer) {
-
-    // read start control packet
-    // se erro, -1
-
-    //int length;
-    //char *ptr
-    // para cada fragmento do buffer
-        // if c == 3, verifica e acaba
-        // ptr += k
-        // update length
-
-    // return length
-    return recievePacket(fd, buffer);
-}
-
-int llclose(int fd, ApplicationStatus status) {
-    return status == TRANSMITTER ? disconnectTransmitter(fd) : disconnectReceiver(fd);
+    return 0;
 }

@@ -11,9 +11,6 @@ typedef enum { TRANSMITTER, RECEIVER } ApplicationStatus;
 #define C_START 2
 #define C_END   3
 
-#define T_FILE_SIZE 0
-#define T_FILE_NAME 1
-
 /*typedef struct {
     int fileDescriptor;
     int status;
@@ -51,9 +48,12 @@ int llread(int fd, char *buffer);
  * @brief 
  * 
  * @param fd        File descriptor of the data link
- * @param status    Status of the application (TRANSMITTER | RECEIVER)          // TODO: Remove this? We think we need this for this to work
  * @return int      Positive value on success or negative value on error
  */
-int llclose(int fd, ApplicationStatus status);
+int llclose(int fd);
+
+int transmitFile(int fd, char *filePath, int pathLength); 
+
+int receiveFile(int fd);
 
 #endif // APPLICATION_H

@@ -1,6 +1,7 @@
 #include "../headers/auxiliary.h"
-#include "../headers/protocol.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 int pathToFilename(char *filename, char *path, int pathLength) {
   int lastSlashIdx = -1, filenameSize = 0;
@@ -17,15 +18,21 @@ int pathToFilename(char *filename, char *path, int pathLength) {
 }
 
 int createControlPacket(char *buffer, char control, int size, char *fileName, char fileNameSize) {
-    // TODO: N GOSTO DISTO xD
-    buffer[0] = control;
-    buffer[1] = 0;
-    buffer[2] = sizeof(int);
-    buffer[3] = size;
-    buffer[7] = 1;
-    buffer[8] = fileNameSize;
-    strncpy(buffer + 9, fileName, fileNameSize);
-    return 9 + fileNameSize;
+    char *ptr = buffer;
+    *(ptr++) = control;
+    *(ptr++) = 0;
+
+    int length;
+    char sizeStr[100];
+    if ((length = sprintf(sizeStr, "%d", size)) < 0) return -1;
+
+    *(ptr++) = length;
+    memcpy(ptr, sizeStr, length);
+    ptr += length;
+    *(ptr++) = 1;
+    *(ptr++) = fileNameSize;
+    strncpy(ptr, fileName, fileNameSize);
+    return  ptr - buffer + fileNameSize;
 }
 
 int createDataPacket(char *buffer, char sequence, char *data, int dataLength) {
@@ -33,6 +40,23 @@ int createDataPacket(char *buffer, char sequence, char *data, int dataLength) {
     buffer[1] = sequence;
     buffer[2] = (char) (dataLength / 256);
     buffer[3] = (char) (dataLength % 256);
-    strncpy(buffer + 4, data, dataLength);
+    memcpy(buffer + 4, data, dataLength);
     return 4 + dataLength;
+}
+
+int parseControlPacket(char *packet, int packetLength, char *fileName) {
+  int size, fileSize;
+  char buffer[10];
+  for (int i = 1; i < packetLength; i += 2 + size) {
+    size = packet[i+1];
+    if (packet[i] == T_FILE_SIZE) {
+        memcpy(buffer, packet + i + 2, size);
+        fileSize = atoi(buffer);
+    } else if (packet[i] == T_FILE_NAME) {
+        strncpy(fileName, packet + i + 2, size);
+    } else {
+        return -1;
+    }
+  }
+  return fileSize;
 }
