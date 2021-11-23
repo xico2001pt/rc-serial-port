@@ -82,17 +82,12 @@ int transmitFrame(int fd, char *frame, int length) {
     printf("\n");
   #endif
 
-  for (int n = 0; n < length; ++n) printf(" 0x%02hhX", frame[n]);
-  printf("\n");
-
   char frameCopy[MAX_FRAME_SIZE];
   memcpy(frameCopy, frame, length);
 
   int len = length;
   if (IS_I_CONTROL_BYTE(frameCopy[2])) {
-    char bcc = frameCopy[length - 2];
-    len = stuffing(frameCopy + 4, length - 6) + 6;
-    frameCopy[len - 2] = bcc;
+    len = stuffing(frameCopy + 1, length - 2) + 2;
     frameCopy[len - 1] = FLAG;
   }
   if (write(fd, frameCopy, len) < 0) return -1;
@@ -142,9 +137,6 @@ int receiveFrame(int fd, int timer, char *frame) {
     for (int n = 0; n < idx; ++n) printf(" 0x%02hhX", frame[n]);
     printf("\n");
   #endif
-
-  for (int n = 0; n < idx; ++n) printf(" 0x%02hhX", frame[n]);
-  printf("\n");
   
   return idx;
 }
@@ -173,9 +165,8 @@ FrameState FrameStateMachine(FrameState currentState, char *frame, int *length) 
     break;
   case BCC1_RCV:
     if (byte == FLAG) {
-      int len = destuffing(frame + 4, *length - 6) + 6;
-      frame[len - 2] = frame[*length - 2];
-      frame[len - 1] = frame[*length - 1];
+      int len = destuffing(frame + 1, *length - 2) + 2;
+      frame[len - 1] = FLAG;
       *length = len;
       if (calculateBCC(frame + 4, len - 6) == frame[len - 2]) return STOP;
       else break;
