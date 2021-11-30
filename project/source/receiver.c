@@ -13,7 +13,7 @@ int connectReceiver(int port) {
   #ifdef DEBUG
     printf("> Awaiting SET frame to be recieved\n");
   #endif
-  if (receiveFrame(fd, 0, frame) != SU_FRAME_SIZE) return -1;
+  if (receiveFrame(fd, 20, frame) != SU_FRAME_SIZE) return -1;
 
   // Verifying frame
   if (frame[2] != C_SET) return -1;
@@ -61,6 +61,7 @@ int disconnectReceiver(int fd) {
 }
 
 int recievePacket(int fd, int attempts, int timer, char *packet) {
+  static int S = 0;
   char frame[MAX_FRAME_SIZE];
   int len;
 
@@ -68,15 +69,18 @@ int recievePacket(int fd, int attempts, int timer, char *packet) {
 
     // Awaiting reception of frame
     if ((len = receiveFrame(fd, timer, frame)) < 0) {
-      createSUFrame(frame, C_REJ(frame[2] >> 7));
-      if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
+      // We should have an S such as the transmitter, because control byte may be completely wrong, we can't calculate the response based on it
+      createSUFrame(frame, C_REJ(S));               // We sent an REJ with the number of the packet that we want to read and discard the frame read
+
+      // If write fails we should return -1 or try again? It can give an error if: serial port is disconnected or if it just didn't work for some reason
+      transmitFrame(fd, frame, SU_FRAME_SIZE);      // We don't need to know if frame was correctly trasmitted or not, either way we want to attempt the read again
       continue;
     }
 
-    // Checking control byte
-    if (!IS_I_CONTROL_BYTE(frame[2])) {
-      createSUFrame(frame, C_REJ(frame[2] >> 7));
-      if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
+    // Checking control byte, if it's not an information frame or the frame is a duplicate (occured a timeout in transmitter)
+    if (!IS_I_CONTROL_BYTE(frame[2]) || frame[2] == C_I(1 - S)) {
+      createSUFrame(frame, C_REJ(S));
+      transmitFrame(fd, frame, SU_FRAME_SIZE);
       continue;
     }
 
@@ -85,7 +89,8 @@ int recievePacket(int fd, int attempts, int timer, char *packet) {
     memcpy(packet, frame + 4, len);
 
     // Creating response
-    createSUFrame(frame, C_RR(frame[2] >> 7));
+    S = 1 - S;
+    createSUFrame(frame, C_RR(S));
 
     // Sendind response
     if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;

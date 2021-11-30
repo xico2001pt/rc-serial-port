@@ -44,6 +44,7 @@ int communicateFrame(int fd, int attempts, int timer, char *frame, int length) {
   }
 
   char response[MAX_FRAME_SIZE];
+  int len;
 
   for (int attempt = 1; attempt <= attempts; ++attempt) {
 
@@ -60,13 +61,13 @@ int communicateFrame(int fd, int attempts, int timer, char *frame, int length) {
     #endif
 
     // Trying to recieve frame
-    int len;
-    if ((len = receiveFrame(fd, timer, response)) < 0) return -1;
+    if ((len = receiveFrame(fd, timer, response)) < 0) continue;
     
-    if (response[2] == C_REJ(0) || response[2] == C_REJ(1)) continue;
-
-    memcpy(frame, response, len);
-    return len;
+    // If response isn't a REJ copy the response to frame and return the len
+    if (MSB(response[2]) != C_REJ(0) && MSB(response[2]) != C_REJ(1)) {
+      memcpy(frame, response, len);
+      return len;
+    }
   }
 
   return -1;
@@ -87,11 +88,11 @@ int transmitPacket(int fd, int attempts, int timer, char *packet, int length) {
   createIFrame(frame, C_I(S), packet, length);
   
   // Sending frame and receiving a response
-  if (communicateFrame(fd, attempts, timer, frame, length + 6) != SU_FRAME_SIZE) return -1;
+  if (communicateFrame(fd, attempts, timer, frame, length + 6) != SU_FRAME_SIZE) return -1;   // 6 can be a macro (#define)
 
   // Checking control byte and changing S if it's in conformity
-  if (frame[2] == C_RR(0)) S = 0;
-  else if (frame[2] == C_RR(1)) S = 1;
+  if (MSB(frame[2]) == C_RR(0)) S = 0;
+  else if (MSB(frame[2]) == C_RR(1)) S = 1;
   else return -1;
 
   return 0;

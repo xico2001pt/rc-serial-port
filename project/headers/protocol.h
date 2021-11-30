@@ -3,6 +3,8 @@
 
 #include <termios.h>
 
+#define MSB(C)                      (C & 0b11111111)   // Used to compare frame control byte with C_RR and C_REJ (signal gets extended to 32 bits)
+
 #define BAUDRATE B38400
 
 #define FLAG 0b01111110
@@ -18,11 +20,11 @@
 #define C_SET                       0b00000011  // Set up
 #define C_DISC                      0b00001011  // Disconnect
 #define C_UA                        0b00000111  // Unnumbered acknowledgment
-#define C_I(S)                      (S << 7)      // Recieving information
-#define C_RR(R)                     (0b0000101 | (R << 7))  // Receiver ready
-#define C_REJ(R)                    (0b0000001 | (R << 7))  // Reject
-#define IS_SU_CONTROL_BYTE(byte)    (byte == C_SET || byte == C_DISC || byte == C_UA || (byte & 0b1111111) == C_RR(0) || (byte & 0b1111111) == C_REJ(0))
-#define IS_I_CONTROL_BYTE(byte)     ((byte & 0b10111111) == C_I(0))
+#define C_I(S)                      ((S) << 7)      // Recieving information
+#define C_RR(R)                     (0b0000101 | ((R) << 7))  // Receiver ready
+#define C_REJ(R)                    (0b0000001 | ((R) << 7))  // Reject
+#define IS_SU_CONTROL_BYTE(byte)    (byte == C_SET || byte == C_DISC || byte == C_UA || MSB(byte) == C_RR(0) || MSB(byte) == C_RR(1) || MSB(byte) == C_REJ(0) || MSB(byte) == C_REJ(1))
+#define IS_I_CONTROL_BYTE(byte)     (MSB(byte) == C_I(0) || MSB(byte) == C_I(1))
 #define BCC(B1, B2)                 (B1 ^ B2)
 
 #define MAX_FRAME_SIZE 1034         // (MAX_PACKET_SIZE + 4 [ADDRESS, CONTROLLER, BCC1 and BCC2]) * 2 [WORST SCENERIO, EVERYTHING IS FLAG OR ESCAPE] + 2 [FLAGS]  
