@@ -2,6 +2,7 @@
 #include "../headers/protocol.h"
 #include "../headers/auxiliary.h"
 #include <stdio.h>
+#include <string.h>
 
 int connectTransmitter(int port) {
   int fd = openSerial(port);
@@ -42,6 +43,8 @@ int communicateFrame(int fd, int attempts, int timer, char *frame, int length) {
     return -1;
   }
 
+  char response[MAX_FRAME_SIZE];
+
   for (int attempt = 1; attempt <= attempts; ++attempt) {
 
     #ifdef DEBUG
@@ -58,13 +61,18 @@ int communicateFrame(int fd, int attempts, int timer, char *frame, int length) {
 
     // Trying to recieve frame
     int len;
-    if ((len = receiveFrame(fd, timer, frame)) != -1) return len;
+    if ((len = receiveFrame(fd, timer, response)) < 0) return -1;
+    
+    if (response[2] == C_REJ(0) || response[2] == C_REJ(1)) continue;
+
+    memcpy(frame, response, len);
+    return len;
   }
 
   return -1;
 }
 
-int transmitPacket(int fd, char *packet, int length) {
+int transmitPacket(int fd, int attempts, int timer, char *packet, int length) {
   static int S = 0;
 
   // Failsafe
@@ -79,7 +87,7 @@ int transmitPacket(int fd, char *packet, int length) {
   createIFrame(frame, C_I(S), packet, length);
   
   // Sending frame and receiving a response
-  if (communicateFrame(fd, 3, 3, frame, length + 6) != SU_FRAME_SIZE) return -1;
+  if (communicateFrame(fd, attempts, timer, frame, length + 6) != SU_FRAME_SIZE) return -1;
 
   // Checking control byte and changing S if it's in conformity
   if (frame[2] == C_RR(0)) S = 0;

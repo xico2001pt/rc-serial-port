@@ -33,10 +33,12 @@ int communicateFrame(int fd, int attempts, int timer, char *frame, int size);
  * @brief Formats the packet into a frame and sends it
  * 
  * @param fd        File descriptor of the serial port
+ * @param attempts  Number of attempts (>= 1)
+ * @param timer     Time in seconds for time out (0 means that it'll never time out)
  * @param packet    Packet to be sent
  * @param length    Length of the packet to be sent
  * @return int      Returns -1 on error, 0 when it's successful
  */
-int transmitPacket(int fd, char *packet, int length);
+int transmitPacket(int fd, int attempts, int timer, char *packet, int length);
 
 #endif // TRANSMITTER_H

@@ -60,26 +60,38 @@ int disconnectReceiver(int fd) {
   return 0;
 }
 
-int recievePacket(int fd, char *packet) {
+int recievePacket(int fd, int attempts, int timer, char *packet) {
   char frame[MAX_FRAME_SIZE];
   int len;
 
-  // Awaiting reception of frame
-  if ((len = receiveFrame(fd, 0, frame)) < 0) return -1;
+  for (int attempt = 1; attempt <= attempts; ++attempt) {
 
-  // Checking control byte
-  if (frame[2] != C_I(0) && frame[2] != C_I(1)) return -1;
+    // Awaiting reception of frame
+    if ((len = receiveFrame(fd, timer, frame)) < 0) {
+      createSUFrame(frame, C_REJ(frame[2] >> 7));
+      if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
+      continue;
+    }
 
-  // Copying array and changing length accordingly
-  len -= 6;
-  memcpy(packet, frame + 4, len);
+    // Checking control byte
+    if (!IS_I_CONTROL_BYTE(frame[2])) {
+      createSUFrame(frame, C_REJ(frame[2] >> 7));
+      if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
+      continue;
+    }
 
-  // Creating response
-  if (frame[2] == C_RR(0)) createSUFrame(frame, C_RR(1));
-  else if (frame[2] == C_RR(1)) createSUFrame(frame, C_RR(0));
+    // Copying array and changing length accordingly
+    len -= 6;
+    memcpy(packet, frame + 4, len);
 
-  // Sendind response
-  if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
+    // Creating response
+    createSUFrame(frame, C_RR(frame[2] >> 7));
 
-  return len;
+    // Sendind response
+    if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
+
+    return len;    
+  }
+
+  return -1;
 }

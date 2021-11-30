@@ -90,7 +90,9 @@ int transmitFrame(int fd, char *frame, int length) {
     len = stuffing(frameCopy + 1, length - 2) + 2;
     frameCopy[len - 1] = FLAG;
   }
+
   if (write(fd, frameCopy, len) < 0) return -1;
+  
   return 0;
 }
 

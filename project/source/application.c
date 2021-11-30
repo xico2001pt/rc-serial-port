@@ -14,24 +14,48 @@
 static ApplicationStatus applicationStatus;
 
 int main(int argc, char **argv) {
-    if (argc != 4) {
-        fprintf(stderr, "Usage: %s [0-Transmitter OR 1-Receiver] [Port Number] [Filename]\n", argv[0]);
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s [0 - Transmitter OR 1 - Receiver] [Port Number] [Filename IF Transmitter]\n", argv[0]);
         return -1;
     }
 
-    ApplicationStatus status = atoi(argv[1]);       // TODO: Change atoi() to strtoi() to check for errors
-    int port = atoi(argv[2]);
+    ApplicationStatus status = atoi(argv[1]);
 
-    int fd;
-    if ((fd = llopen(port, status)) < 0) return -1;
-
-    if (applicationStatus == TRANSMITTER) {
-        if (transmitFile(fd, argv[3], strlen(argv[3])) < 0) return -1;
-    } else {
-        if (receiveFile(fd)) return -1;
+    if ((status != TRANSMITTER && status != RECEIVER) || (status == TRANSMITTER && argc != 4) || (status == RECEIVER && argc != 3)) {
+        fprintf(stderr, "Usage: %s [0 - Transmitter OR 1 - Receiver] [Port Number] [Filename IF Transmitter]\n", argv[0]);
+        return -1;
     }
 
-    if (llclose(fd) < 0) return -1;
+    int port = atoi(argv[2]);
+
+    int pathLength;
+    if ((status == TRANSMITTER) && ((pathLength = strlen(argv[3])) > MAX_PATH_SIZE - 1)) {
+        fprintf(stderr, "Path length to large\n");
+        return -1;
+    }
+
+    int fd;
+    if ((fd = llopen(port, status)) < 0) {
+        fprintf(stderr, "llopen(): Error when opening the serial port\n");
+        return -1;
+    }
+
+    if (applicationStatus == TRANSMITTER) {
+        if (transmitFile(fd, argv[3], pathLength) < 0) {
+            fprintf(stderr, "transmitFile(): Error when transmitting the file\n");
+            return -1;
+        }
+    } else {
+        if (receiveFile(fd)) {
+            fprintf(stderr, "recieveFile(): Error when receiving file\n");
+            return -1;
+        }
+    }
+
+    if (llclose(fd) < 0) {
+        fprintf(stderr, "llclose(): Error when closing the serial port\n");
+        return -1;
+    }
 
     return 0;
 }
@@ -43,12 +67,12 @@ int llopen(int port, ApplicationStatus status) {
 
 int llwrite(int fd, char *buffer, int length) {
     if (applicationStatus == RECEIVER) return -1;
-    return transmitPacket(fd, buffer, length);
+    return transmitPacket(fd, 3, 3, buffer, length);
 }
 
 int llread(int fd, char *buffer) {
     if (applicationStatus == TRANSMITTER) return -1;
-    return recievePacket(fd, buffer);
+    return recievePacket(fd, 3, 20, buffer);
 }
 
 int llclose(int fd) {
@@ -64,7 +88,7 @@ int transmitFile(int fd, char *filePath, int pathLength) {
     struct stat st;
     if (fstat(file, &st) < 0) return -1;
 
-    char fileName[100], data[MAX_DATA_SIZE], packet[MAX_PACKET_SIZE];                                   // TODO: Change fileName size so that it can't be overflowed in pathToFilename's strcpy()
+    char fileName[MAX_PATH_SIZE], data[MAX_DATA_SIZE], packet[MAX_PACKET_SIZE];                                   // TODO: Change fileName size so that it can't be overflowed in pathToFilename's strcpy()
     int fileNameLength = pathToFilename(fileName, filePath, pathLength);
 
     // Creating and transmitting start control packet
@@ -97,7 +121,7 @@ int receiveFile(int fd) {
 
     // Parse data from control packet
     int fileSize;
-    char fileName[100];
+    char fileName[MAX_PATH_SIZE];
     if ((fileSize = parseControlPacket(packet, packetLength, fileName)) < 0) return -1;
 
     // Opening file
