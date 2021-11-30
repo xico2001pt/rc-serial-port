@@ -12,4 +12,6 @@ int createDataPacket(char *buffer, char sequence, char *data, int dataLength);
 
 int parseControlPacket(char *packet, int packetLength, char *fileName);
 
+void printControlPacket(char *packet);
+
 #endif // AUXILIARY_H

@@ -60,3 +60,17 @@ int parseControlPacket(char *packet, int packetLength, char *fileName) {
   }
   return fileSize;
 }
+
+void printControlPacket(char *packet) {
+  int numParameters = 2, size;
+  char aux;
+  ++packet;
+  for (int p = 0; p < numParameters; ++p) {
+    size = (unsigned int) packet[1];
+    aux = packet[2 + size - 1];
+    packet[2 + size - 1] = '\0';
+    printf("     parameter T=%-3d L=%-3d V=%s%c\n", packet[0], size, packet + 2, aux);
+    packet[2 + size - 1] = aux;
+    packet += 2 + size;
+  }
+}

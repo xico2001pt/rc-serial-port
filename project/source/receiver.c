@@ -69,10 +69,7 @@ int recievePacket(int fd, int attempts, int timer, char *packet) {
 
     // Awaiting reception of frame
     if ((len = receiveFrame(fd, timer, frame)) < 0) {
-      // We should have an S such as the transmitter, because control byte may be completely wrong, we can't calculate the response based on it
       createSUFrame(frame, C_REJ(S));               // We sent an REJ with the number of the packet that we want to read and discard the frame read
-
-      // If write fails we should return -1 or try again? It can give an error if: serial port is disconnected or if it just didn't work for some reason
       transmitFrame(fd, frame, SU_FRAME_SIZE);      // We don't need to know if frame was correctly trasmitted or not, either way we want to attempt the read again
       continue;
     }

@@ -1,4 +1,4 @@
-all: debug
+all: application
 
 $(shell mkdir -p build)
 
