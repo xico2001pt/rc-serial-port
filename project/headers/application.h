@@ -13,8 +13,22 @@
 
 #define ABORT(file) {close(file); return -1;}
 
+/**
+ * @brief Transmits the file in the given path
+ * 
+ * @param fd            File descriptor of the data link
+ * @param filePath      Path of the file to be transmitted
+ * @param pathLength    Length of the file path (bytes)
+ * @return int          0 on success, -1 otherwise
+ */
 int transmitFile(int fd, char *filePath, int pathLength); 
 
+/**
+ * @brief Receives a file from the given file descriptor, storing it the same location as the executable
+ * 
+ * @param fd    File descriptor of the data link
+ * @return int  0 on success, -1 otherwise
+ */
 int receiveFile(int fd);
 
 #endif // APPLICATION_H
