@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "transmitter.h": "c",
-        "application.h": "c",
-        "receiver.h": "c"
-    }
-}
