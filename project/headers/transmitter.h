@@ -2,7 +2,7 @@
 #define TRANSMITTER_H
 
 /**
- * @brief Settles the connection between transmitter and reciever
+ * @brief Settles the connection between transmitter and receiver
  * 
  * @param port  Number of port of the serial port
  * @return int  Returns -1 on error, fd of serial port when it's successful
@@ -10,7 +10,7 @@
 int connectTransmitter(int port);
 
 /**
- * @brief Disconnects the connection between transmitter and reciever
+ * @brief Disconnects the connection between transmitter and receiver
  * 
  * @param fd    File descriptor of the serial port
  * @return int  Returns -1 on error, 0 when it's successful
@@ -18,7 +18,7 @@ int connectTransmitter(int port);
 int disconnectTransmitter(int fd);
 
 /**
- * @brief Tries to send the frame the given times to the reciever. It tries again if either nothing is recieved after the given seconds or the transmission fails
+ * @brief Tries to send the frame the given times to the receiver. It tries again if either nothing is received after the given seconds or the transmission fails
  * 
  * @param fd        File descriptor of the serial port
  * @param attempts  Number of attempts (>= 1)

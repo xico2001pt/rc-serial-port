@@ -31,11 +31,13 @@ int connectReceiver(int port) {
 }
 
 int disconnectReceiver(int fd) {
+  
   // Receiving DISC
   char frame[SU_FRAME_SIZE];
   #ifdef DEBUG
     printf("> Awaiting reception of DISC\n");
   #endif
+
   if (receiveFrame(fd, 0, frame) != SU_FRAME_SIZE) return -1;
 
   // Verifying frame
@@ -60,7 +62,7 @@ int disconnectReceiver(int fd) {
   return 0;
 }
 
-int recievePacket(int fd, int attempts, int timer, char *packet) {
+int receivePacket(int fd, int attempts, int timer, char *packet) {
   static int S = 0;
   char frame[MAX_FRAME_SIZE];
   int len;
