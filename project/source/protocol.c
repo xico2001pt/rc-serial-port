@@ -123,8 +123,10 @@ int receiveFrame(int fd, int timer, char *frame) {
     } else if (n == 1) {  // Read one byte
       frame[idx++] = byte;
       if ((state = FrameStateMachine(state, frame, &idx)) == ERROR) {
-        alarm(0);
-        return -1;
+        tcflush(fd, TCIOFLUSH);
+        idx = 0;
+        state = START;
+        continue;
       }
     }
   }

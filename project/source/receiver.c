@@ -83,7 +83,7 @@ int receivePacket(int fd, int attempts, int timer, char *packet) {
   for (int attempt = 1; attempt <= attempts; ++attempt) {
 
     #ifdef T_PROP
-      sleep(T_PROP);
+      usleep(T_PROP);
     #endif
 
     // Awaiting reception of frame
