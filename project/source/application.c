@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
         }
     } else {
         if (receiveFile(fd)) {
-            fprintf(stderr, "recieveFile(): Error when receiving file\n");
+            fprintf(stderr, "receiveFile(): Error when receiving file\n");
             return -1;
         }
     }
@@ -127,7 +127,11 @@ int receiveFile(int fd) {
     if (fileSize % MAX_PACKET_SIZE > 0) ++numberPackets;
     
     for (int i = 0; i < numberPackets; ++i) {
+
         if ((packetLength = llread(fd, packet)) < 0) ABORT(file);
+
+        printf("Application size: %d\n", packetLength);
+
         if (packet[0] == C_DATA) {
             if ((unsigned char) packet[1] != i % 256) ABORT(file);
             if ((unsigned char) packet[2] * 256 + (unsigned char) packet[3] != packetLength - 4) ABORT(file);
@@ -140,7 +144,7 @@ int receiveFile(int fd) {
     // Reading end control packet
     if ((packetLength = llread(fd, packet)) < 0) ABORT(file);
     if (packet[0] != C_END) ABORT(file);
-        
+    
     // Parse data from control packet
     int verificationFileSize;
     char verificationFileName[MAX_PATH_SIZE];
