@@ -130,8 +130,6 @@ int receiveFile(int fd) {
 
         if ((packetLength = llread(fd, packet)) < 0) ABORT(file);
 
-        printf("Application size: %d\n", packetLength);
-
         if (packet[0] == C_DATA) {
             if ((unsigned char) packet[1] != i % 256) ABORT(file);
             if ((unsigned char) packet[2] * 256 + (unsigned char) packet[3] != packetLength - 4) ABORT(file);
