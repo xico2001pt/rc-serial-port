@@ -4,7 +4,7 @@
 typedef enum { TRANSMITTER, RECEIVER } ApplicationStatus;
 
 /**
- * @brief 
+ * @brief Opens the connection of the serial port port given with the role/status supplied
  * 
  * @param port      Number of the serial port to be open
  * @param status    Status of the application (TRANSMITTER | RECEIVER)
@@ -13,7 +13,7 @@ typedef enum { TRANSMITTER, RECEIVER } ApplicationStatus;
 int llopen(int port, ApplicationStatus status);
 
 /**
- * @brief 
+ * @brief Sends a packet to the data link fd given
  * 
  * @param fd        File descriptor of the data link
  * @param buffer    Array of bytes to be written
@@ -23,7 +23,7 @@ int llopen(int port, ApplicationStatus status);
 int llwrite(int fd, char *buffer, int length);
 
 /**
- * @brief 
+ * @brief Reads a packet from the data link fd given
  * 
  * @param fd        File descriptor of the data link
  * @param buffer    Array of bytes to be written
@@ -32,7 +32,7 @@ int llwrite(int fd, char *buffer, int length);
 int llread(int fd, char *buffer);
 
 /**
- * @brief 
+ * @brief Closes the connection of the serial port
  * 
  * @param fd        File descriptor of the data link
  * @return int      Positive value on success or negative value on error

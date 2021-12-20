@@ -1,9 +1,11 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
+#include "protocol.h"
+
 #define MAX_PATH_SIZE 100
 
-#define MAX_PACKET_SIZE 512
+#define MAX_PACKET_SIZE ((MAX_FRAME_SIZE - 2) / 2 - 4)
 #define HEADER_SIZE     4
 #define MAX_DATA_SIZE   (MAX_PACKET_SIZE - HEADER_SIZE)
 

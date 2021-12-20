@@ -16,7 +16,7 @@ int llwrite(int fd, char *buffer, int length) {
 
 int llread(int fd, char *buffer) {
     if (applicationStatus == TRANSMITTER) return -1;
-    return recievePacket(fd, 3, 20, buffer);
+    return receivePacket(fd, 3, 20, buffer);
 }
 
 int llclose(int fd) {

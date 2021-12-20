@@ -4,6 +4,15 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef FER
+  #include <time.h>
+  #include <stdlib.h>
+#endif
+
+#ifdef T_PROP
+  #include <unistd.h>
+#endif
+
 int connectReceiver(int port) {
   int fd = openSerial(port);
   if (fd < 0) return -1;
@@ -27,15 +36,21 @@ int connectReceiver(int port) {
   #endif
   if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
 
+  #ifdef FER
+    srand(time(NULL));
+  #endif
+
   return fd;
 }
 
 int disconnectReceiver(int fd) {
+  
   // Receiving DISC
   char frame[SU_FRAME_SIZE];
   #ifdef DEBUG
     printf("> Awaiting reception of DISC\n");
   #endif
+
   if (receiveFrame(fd, 0, frame) != SU_FRAME_SIZE) return -1;
 
   // Verifying frame
@@ -60,12 +75,16 @@ int disconnectReceiver(int fd) {
   return 0;
 }
 
-int recievePacket(int fd, int attempts, int timer, char *packet) {
+int receivePacket(int fd, int attempts, int timer, char *packet) {
   static int S = 0;
   char frame[MAX_FRAME_SIZE];
   int len;
 
   for (int attempt = 1; attempt <= attempts; ++attempt) {
+
+    #ifdef T_PROP
+      usleep(T_PROP);
+    #endif
 
     // Awaiting reception of frame
     if ((len = receiveFrame(fd, timer, frame)) < 0) {
@@ -73,6 +92,16 @@ int recievePacket(int fd, int attempts, int timer, char *packet) {
       transmitFrame(fd, frame, SU_FRAME_SIZE);      // We don't need to know if frame was correctly trasmitted or not, either way we want to attempt the read again
       continue;
     }
+
+    #ifdef FER
+      int r = rand() % 100;
+      printf("Random: %d\nResult: %s\n", r, r <= FER ? "Try again" : "OK");
+      if (r <= FER) {
+        createSUFrame(frame, C_REJ(S));
+        transmitFrame(fd, frame, SU_FRAME_SIZE);
+        continue;
+      }
+    #endif
 
     // Checking control byte, if it's not an information frame or the frame is a duplicate (occured a timeout in transmitter)
     if (!IS_I_CONTROL_BYTE(frame[2]) || frame[2] == C_I(1 - S)) {

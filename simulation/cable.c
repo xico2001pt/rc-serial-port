@@ -56,7 +56,7 @@ int main(int argc, char** argv)
     newtioTx.c_oflag = 0;
     newtioTx.c_lflag = 0;
     newtioTx.c_cc[VTIME]    = 1;   /* inter-character timer unused */
-    newtioTx.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
+    newtioTx.c_cc[VMIN]     = 0;   /* blocking read until 0 chars received */
     tcflush(fdTx, TCIOFLUSH);
     if ( tcsetattr(fdTx,TCSANOW,&newtioTx) == -1) {
       perror("tcsetattr");
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
     newtioRx.c_oflag = 0;
     newtioRx.c_lflag = 0;
     newtioRx.c_cc[VTIME]    = 1;   /* inter-character timer unused */
-    newtioRx.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
+    newtioRx.c_cc[VMIN]     = 0;   /* blocking read until 0 chars received */
     tcflush(fdRx, TCIOFLUSH);
     if ( tcsetattr(fdRx,TCSANOW,&newtioRx) == -1) {
       perror("tcsetattr");
@@ -104,7 +104,7 @@ int fromRx, toTx;
 int fromStdin;
 int connection=100;
 
-    while (STOP==FALSE) {    
+    while (STOP==FALSE) { 
 
       fromTx = read(fdTx,tx2rx,512); 
       if(fromTx){ 

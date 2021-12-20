@@ -37,7 +37,7 @@ void configNonCanonical(struct termios *config) {
   config->c_lflag = 0;
 
   config->c_cc[VTIME]    = 1;   /* inter-character timer unused */
-  config->c_cc[VMIN]     = 0;   /* blocking read until 1 char received */
+  config->c_cc[VMIN]     = 0;   /* blocking read until 0 char received */
 }
 
 int openSerial(int port) {
@@ -123,8 +123,10 @@ int receiveFrame(int fd, int timer, char *frame) {
     } else if (n == 1) {  // Read one byte
       frame[idx++] = byte;
       if ((state = FrameStateMachine(state, frame, &idx)) == ERROR) {
-        alarm(0);
-        return -1;
+        tcflush(fd, TCIOFLUSH);
+        idx = 0;
+        state = START;
+        continue;
       }
     }
   }

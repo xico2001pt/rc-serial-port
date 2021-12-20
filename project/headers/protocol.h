@@ -20,14 +20,16 @@
 #define C_SET                       0b00000011  // Set up
 #define C_DISC                      0b00001011  // Disconnect
 #define C_UA                        0b00000111  // Unnumbered acknowledgment
-#define C_I(S)                      ((S) << 7)      // Recieving information
+#define C_I(S)                      ((S) << 6)      // Recieving information
 #define C_RR(R)                     (0b0000101 | ((R) << 7))  // Receiver ready
 #define C_REJ(R)                    (0b0000001 | ((R) << 7))  // Reject
 #define IS_SU_CONTROL_BYTE(byte)    (byte == C_SET || byte == C_DISC || byte == C_UA || MSB(byte) == C_RR(0) || MSB(byte) == C_RR(1) || MSB(byte) == C_REJ(0) || MSB(byte) == C_REJ(1))
 #define IS_I_CONTROL_BYTE(byte)     (MSB(byte) == C_I(0) || MSB(byte) == C_I(1))
 #define BCC(B1, B2)                 (B1 ^ B2)
 
-#define MAX_FRAME_SIZE 1034         // (MAX_PACKET_SIZE + 4 [ADDRESS, CONTROLLER, BCC1 and BCC2]) * 2 [WORST SCENERIO, EVERYTHING IS FLAG OR ESCAPE] + 2 [FLAGS]  
+#ifndef MAX_FRAME_SIZE
+    #define MAX_FRAME_SIZE 1024
+#endif
 #define SU_FRAME_SIZE 5
 
 typedef enum {START, FLAG_RCV, A_RCV, C_RCV, BCC_RCV, BCC1_RCV, STOP, ERROR} FrameState;
