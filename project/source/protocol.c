@@ -124,9 +124,8 @@ int receiveFrame(int fd, int timer, char *frame) {
       frame[idx++] = byte;
       if ((state = FrameStateMachine(state, frame, &idx)) == ERROR) {
         tcflush(fd, TCIOFLUSH);
-        idx = 0;
-        state = START;
-        continue;
+        alarm(0);
+        return -1;
       }
     }
   }
