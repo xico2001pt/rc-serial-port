@@ -132,8 +132,8 @@ int receiveFrame(int fd, int timer, char *frame) {
 
   alarm(0);
 
-  // If timed-out
-  if (timeOut) {
+  // If timed-out or final state isn't STOP
+  if (timeOut || state != STOP) {
     tcflush(fd, TCIFLUSH);
     return -1;
   }

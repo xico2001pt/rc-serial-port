@@ -4,15 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef FER
-  #include <time.h>
-  #include <stdlib.h>
-#endif
-
-#ifdef T_PROP
-  #include <unistd.h>
-#endif
-
 int connectReceiver(int port) {
   int fd = openSerial(port);
   if (fd < 0) return -1;
@@ -35,10 +26,6 @@ int connectReceiver(int port) {
     printf("> Sending UA reponse\n");
   #endif
   if (transmitFrame(fd, frame, SU_FRAME_SIZE) < 0) return -1;
-
-  #ifdef FER
-    srand(time(NULL));
-  #endif
 
   return fd;
 }
@@ -82,26 +69,12 @@ int receivePacket(int fd, int attempts, int timer, char *packet) {
 
   for (int attempt = 1; attempt <= attempts; ++attempt) {
 
-    #ifdef T_PROP
-      usleep(T_PROP);
-    #endif
-
     // Awaiting reception of frame
     if ((len = receiveFrame(fd, timer, frame)) < 0) {
       createSUFrame(frame, C_REJ(S));               // We sent an REJ with the number of the packet that we want to read and discard the frame read
       transmitFrame(fd, frame, SU_FRAME_SIZE);      // We don't need to know if frame was correctly trasmitted or not, either way we want to attempt the read again
       continue;
     }
-
-    #ifdef FER
-      int r = rand() % 100;
-      printf("Random: %d\nResult: %s\n", r, r <= FER ? "Try again" : "OK");
-      if (r <= FER) {
-        createSUFrame(frame, C_REJ(S));
-        transmitFrame(fd, frame, SU_FRAME_SIZE);
-        continue;
-      }
-    #endif
 
     // Checking control byte, if it's not an information frame or the frame is a duplicate (occured a timeout in transmitter)
     if (!IS_I_CONTROL_BYTE(frame[2]) || frame[2] == C_I(1 - S)) {
