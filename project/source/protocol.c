@@ -122,7 +122,7 @@ int receiveFrame(int fd, int timer, char *frame) {
       continue;
     } else if (n == 1) {  // Read one byte
       frame[idx++] = byte;
-      if ((state = FrameStateMachine(state, frame, &idx)) == ERROR) {
+      if ((state = FrameStateMachine(state, frame, &idx)) == ERROR) {   // If BCC2 fails
         tcflush(fd, TCIOFLUSH);
         alarm(0);
         return -1;
@@ -133,7 +133,10 @@ int receiveFrame(int fd, int timer, char *frame) {
   alarm(0);
 
   // If timed-out
-  if (timeOut) return -1;
+  if (timeOut) {
+    tcflush(fd, TCIFLUSH);
+    return -1;
+  }
 
   #ifdef DEBUG
     printf("Recieved:    ");
@@ -172,14 +175,14 @@ FrameState FrameStateMachine(FrameState currentState, char *frame, int *length) 
       frame[len - 1] = FLAG;
       *length = len;
       if (calculateBCC(frame + 4, len - 6) == frame[len - 2]) return STOP;
-      else break;
+      else ERROR;                            // If BCC2 fails
     }
     return BCC1_RCV;
   case STOP:
     return STOP;
   }
 
-  return ERROR;
+  return START;
 }
 
 char calculateBCC(char *data, int length) {

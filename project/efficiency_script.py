@@ -2,7 +2,7 @@ import subprocess
 import time
 
 FER = [0, 1, 5, 10]
-TPROP = [0, 1500, 5000, 7500]        # ms
+TPROP = [0, 150000, 500000, 750000]
 INFOSIZE = [256, 512, 1024, 2048]
 
 def main():
@@ -21,6 +21,8 @@ def main():
                     print(f"Time of execution for FER={fer}, T_PROP={tprop}, MAX_INFO_SIZE={infosize}: {total}", flush=True)
                 else:
                     print("Error", flush=True)
+                
+                input()
 
 if __name__ == "__main__":
     main()
